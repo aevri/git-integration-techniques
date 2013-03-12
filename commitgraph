@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+# encoding: utf-8
+
+import argparse
+import subprocess
+import sys
+
+# networkx must be installed before use
+#   $ sudo apt-get install python3-networkx
+#
+import networkx
+
+# important to read - the graphml won't render nicely by default:
+# http://thirld.com/blog/2012/01/31/making-yed-import-labels-from-graphml-files/
+
+
+def main():
+
+    default_output = 'out.graphml'
+
+    parser = argparse.ArgumentParser(
+        description="Git commit graph generator")
+
+    parser.add_argument(
+        "input",
+        help="path to git reposiory, defaults to current.",
+        nargs='?',
+        default=".")
+
+    parser.add_argument(
+        "--output",
+        help="path to output graphml, defaults to {}.".format(default_output),
+        default="out.graphml")
+
+    parser.add_argument(
+        "--range",
+        help="commits, e.g.'HEAD~50..'",
+        default="")
+
+    args = parser.parse_args()
+
+    commits = yield_commits(args.input, args.range)
+    graph = make_graph(commits)
+    write_graphml(graph, args.output)
+    print("wrote:", args.output)
+
+
+def write_graphml(graph, filename):
+
+    # write the graph in the 'graphml' format, this is useful because the
+    # 'yEd' editor will allow us to load the graph and manipulate it into a
+    # form that we are happy with
+    graphml = '\n'.join(networkx.generate_graphml(graph))
+    with open(filename, "w") as f:
+        f.write(graphml)
+
+
+def make_graph(commits):
+    graph = networkx.DiGraph()
+
+    for subject, name, parents, _decorations in commits:
+        label = ""
+        color = "#dc322f"
+        if len(parents) > 1:
+            color = "#fdf6e3"
+        elif len(parents) == 0:
+            color = "#839496"
+
+        graph.add_node(name, label=label, color=color)
+        for p in parents:
+            p_name = p
+            graph.add_edge(name, p_name)
+
+    return graph
+
+
+def yield_commits(repo_dir, range_=None):
+    git_args = ["git", "log", "--format=%f:%h:%p:%d"]
+    if range_:
+        git_args.append(range_)
+    else:
+        git_args.append("--all")
+
+    for line in yield_stdout(git_args, cwd=repo_dir):
+        commit_info = line.split(':')
+        subject = commit_info[0]
+        name = commit_info[1]
+        parents = commit_info[2].split()
+        decorations = commit_info[3].strip().strip('()').split()
+        yield subject, name, parents, decorations
+
+
+def yield_stdout(args, cwd):
+
+    process = subprocess.Popen(
+        args,
+        stdout=subprocess.PIPE,
+        bufsize=1,
+        universal_newlines=True,
+        cwd=cwd)
+
+    with process:
+        for line in process.stdout:
+            yield line
+
+
+if __name__ == "__main__":
+    sys.exit(main())
