@@ -39,46 +39,42 @@ def createNewFileAndCommitAppends(filename, words):
         run("git", "commit", filename, "-m", filename + ": " + word)
 
 
-def svnWorkflow():
-    workflow_name = "svn-workflow"
-    run("rm", "-rf", workflow_name)
-    run("mkdir", workflow_name)
-    with chDirContext(workflow_name):
-        createCentralizedRepoAndWorkers()
-        for w in WORKER_NAMES:
-            with chDirContext(w):
-                createNewFileAndCommitAppends(w, COMMIT_WORDS)
-                run("git", "pull", "--rebase")
-                run("git", "push", "origin", "master")
+class SvnStrategy():
+
+    def update(self):
+        pass
+
+    def land(self):
+        run("git", "pull", "--rebase")
+        run("git", "push", "origin", "master")
 
 
-def pullWorkflow():
-    workflow_name = "pull-workflow"
-    run("rm", "-rf", workflow_name)
-    run("mkdir", workflow_name)
-    with chDirContext(workflow_name):
-        createCentralizedRepoAndWorkers()
-        for w in WORKER_NAMES:
-            with chDirContext(w):
-                createNewFileAndCommitAppends(w, COMMIT_WORDS)
-                run("git", "pull")
-                run("git", "push", "origin", "master")
+class SvnPullStrategy():
+
+    def update(self):
+        pass
+
+    def land(self):
+        run("git", "pull")
+        run("git", "push", "origin", "master")
 
 
-def manypullWorkflow():
-    workflow_name = "manypull-workflow"
-    run("rm", "-rf", workflow_name)
-    run("mkdir", workflow_name)
-    with chDirContext(workflow_name):
+def doWork(integration_strategy):
+    tempdir_name = "_workflow_tempdir"
+    run("rm", "-rf", tempdir_name)
+    run("mkdir", tempdir_name)
+    with chDirContext(tempdir_name):
         createCentralizedRepoAndWorkers()
         for word in COMMIT_WORDS.split():
             for worker in WORKER_NAMES:
                 with chDirContext(worker):
+                    integration_strategy.update()
                     createNewFileAndCommitAppends(worker, word)
-                    run("git", "pull")
-                    run("git", "push", "origin", "master")
+                    integration_strategy.land()
+        with chDirContext(CENTRAL_REPO_NAME):
+            graph = run("git", "log", "--all", "--graph", "--oneline").stdout
+            print graph
 
 
-svnWorkflow()
-pullWorkflow()
-manypullWorkflow()
+doWork(SvnStrategy())
+doWork(SvnPullStrategy())
