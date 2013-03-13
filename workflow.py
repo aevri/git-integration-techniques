@@ -151,6 +151,46 @@ class RebaseTopicFfOnlyWorkflow(WorkflowBase):
         run("git", "push", "origin", "master")
 
 
+class SquashTopicWorkflow(WorkflowBase):
+
+    def title(self):
+        return "Topic branches, squash"
+
+    def description(self):
+        return "Work on a topic branch, squash work back to master when done"
+
+    def workflow(self):
+        return """
+            $ git checkout -b mywork
+            .. commit some work ..
+            .. commit some work ..
+
+            $ git fetch
+            $ git checkout master
+            $ git merge origin/master --ff-only
+            $ git merge mywork --squash
+            $ git commit
+            $ git branch -D mywork
+            $ git push origin master
+            """
+
+    def start_project(self, name, project):
+        run("git", "checkout", "-b", project)
+
+    def update(self, name, project):
+        pass
+
+    def do_item(self, name, project, item):
+        commitAppendToProjectFile(name, project, item)
+
+    def finish_project(self, name, project):
+        run("git", "fetch")
+        run("git", "checkout", "-B", "master", "origin/master")
+        run("git", "merge", project, "--squash")
+        run("git", "commit", "-m", project + " (" + name + ")")
+        run("git", "branch", "-D", project)
+        run("git", "push", "origin", "master")
+
 class RebaseTopicNoFfWorkflow(WorkflowBase):
 
     def title(self):
@@ -367,6 +407,8 @@ def doWorkflow(workflow, workers):
                         pass
             jobsDirs = next_jobsDirs
             next_jobsDirs = []
+
+        # graph the result on master
         with chDirContext(CENTRAL_REPO_NAME):
             graph = run("git", "log", "--all", "--graph", "--oneline").stdout
 
@@ -394,6 +436,7 @@ workers = [alice, bob, charley, dorian]
 doWorkflow(RebaseMasterWorkflow(), workers)
 doWorkflow(RebaseTopicFfOnlyWorkflow(), workers)
 doWorkflow(RebaseTopicNoFfWorkflow(), workers)
+doWorkflow(SquashTopicWorkflow(), workers)
 doWorkflow(MergeTopicWorkflow(), workers)
 doWorkflow(MergeTopicCatchupWorkflow(), workers)
 doWorkflow(SvnWorkflow(), workers)
