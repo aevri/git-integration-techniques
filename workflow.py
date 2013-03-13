@@ -37,11 +37,11 @@ class Worker():
 
     def work(self, workflow):
         yield
-        workflow.start_project(self.project)
+        workflow.start_project(self.name, self.project)
         for item in self.items:
             workflow.do_item(self.name, self.project, item)
             yield
-        workflow.finish_project(self.project)
+        workflow.finish_project(self.name, self.project)
 
 
 def commitAppendToFile(filename, text, message):
@@ -51,12 +51,31 @@ def commitAppendToFile(filename, text, message):
     run("git", "commit", filename, "-m", message)
 
 
-class SvnStrategy():
+class RebaseMasterWorkflow():
 
-    def start_project(self, name):
+    def start_project(self, name, project):
         pass
 
-    def update(self):
+    def update(self, name, project):
+        pass
+
+    def do_item(self, name, project, item):
+        commitAppendToFile(
+            project,
+            item,
+            project + ": " + item + " (" + name + ")")
+
+    def finish_project(self, name, project):
+        run("git", "pull", "--rebase")
+        run("git", "push", "origin", "master")
+
+
+class SvnWorkflow():
+
+    def start_project(self, name, project):
+        pass
+
+    def update(self, name, project):
         pass
 
     def do_item(self, name, project, item):
@@ -67,17 +86,17 @@ class SvnStrategy():
         run("git", "pull", "--rebase")
         run("git", "push", "origin", "master")
 
-    def finish_project(self, name):
+    def finish_project(self, name, project):
         run("git", "pull", "--rebase")
         run("git", "push", "origin", "master")
 
 
-class SvnPullStrategy():
+class SvnPullWorkflow():
 
-    def start_project(self, name):
+    def start_project(self, name, project):
         pass
 
-    def update(self):
+    def update(self, name, project):
         pass
 
     def do_item(self, name, project, item):
@@ -88,7 +107,7 @@ class SvnPullStrategy():
         run("git", "pull")
         run("git", "push", "origin", "master")
 
-    def finish_project(self, name):
+    def finish_project(self, name, project):
         run("git", "pull")
         run("git", "push", "origin", "master")
 
@@ -132,5 +151,6 @@ dorian = Worker("Dorian", "painting", ["apple", "banana", "cherry", "date"])
 
 workers = [alice, bob, charley, dorian]
 
-scheduleWork(SvnStrategy(), workers)
-scheduleWork(SvnPullStrategy(), workers)
+scheduleWork(RebaseMasterWorkflow(), workers)
+scheduleWork(SvnWorkflow(), workers)
+scheduleWork(SvnPullWorkflow(), workers)
