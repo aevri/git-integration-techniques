@@ -9,72 +9,128 @@ run = phlsys_subprocess.run
 chDirContext = phlsys_fs.chDirContext
 
 CENTRAL_REPO_NAME = "origin"
-WORKER_NAMES = ["alice", "bob", "charlie", "dorian"]
-COMMIT_WORDS = "one two three"
 
 
-def createCentralizedRepoAndWorkers():
+def createCentralizedRepoAndWorkers(worker_names):
     run("mkdir", CENTRAL_REPO_NAME)
     with chDirContext(CENTRAL_REPO_NAME):
         run("git", "init", "--bare")
-    for w in WORKER_NAMES:
+    for w in worker_names:
         run("git", "clone", CENTRAL_REPO_NAME, w)
-    worker = WORKER_NAMES[0]
+    worker = worker_names[0]
     with chDirContext(worker):
         run("touch", "README")
         run("git", "add", "README")
         run("git", "commit", "README", "-m", "initial commit")
         run("git", "push", "origin", "master")
-    for w in WORKER_NAMES:
+    for w in worker_names:
         with chDirContext(w):
             run("git", "pull")
 
 
-def createNewFileAndCommitAppends(filename, words):
-    run("touch", filename)
-    for word in words.split():
-        run("git", "add", filename)
-        with open(filename, "a") as f:
-            f.write(word + "\n")
-        run("git", "commit", filename, "-m", filename + ": " + word)
+class Worker():
+
+    def __init__(self, name, project, items):
+        self.name = name
+        self.project = project
+        self.items = items
+
+    def work(self, workflow):
+        yield
+        workflow.start_project(self.project)
+        for item in self.items:
+            workflow.do_item(self.name, self.project, item)
+            yield
+        workflow.finish_project(self.project)
+
+
+def commitAppendToFile(filename, text, message):
+    with open(filename, "a") as f:
+        f.write(text + "\n")
+    run("git", "add", filename)
+    run("git", "commit", filename, "-m", message)
 
 
 class SvnStrategy():
 
+    def start_project(self, name):
+        pass
+
     def update(self):
         pass
 
-    def land(self):
+    def do_item(self, name, project, item):
+        commitAppendToFile(
+            project,
+            item,
+            project + ": " + item + " (" + name + ")")
+        run("git", "pull", "--rebase")
+        run("git", "push", "origin", "master")
+
+    def finish_project(self, name):
         run("git", "pull", "--rebase")
         run("git", "push", "origin", "master")
 
 
 class SvnPullStrategy():
 
+    def start_project(self, name):
+        pass
+
     def update(self):
         pass
 
-    def land(self):
+    def do_item(self, name, project, item):
+        commitAppendToFile(
+            project,
+            item,
+            project + ": " + item + " (" + name + ")")
+        run("git", "pull")
+        run("git", "push", "origin", "master")
+
+    def finish_project(self, name):
         run("git", "pull")
         run("git", "push", "origin", "master")
 
 
-def doWork(integration_strategy):
+def scheduleWork(workflow, workers):
     tempdir_name = "_workflow_tempdir"
     run("rm", "-rf", tempdir_name)
     run("mkdir", tempdir_name)
     with chDirContext(tempdir_name):
-        createCentralizedRepoAndWorkers()
-        for word in COMMIT_WORDS.split():
-            for worker in WORKER_NAMES:
-                with chDirContext(worker):
-                    integration_strategy.update()
-                    createNewFileAndCommitAppends(worker, word)
-                    integration_strategy.land()
+        createCentralizedRepoAndWorkers([w.name for w in workers])
+
+        jobsDirs = [(w.work(workflow), w.name) for w in workers]
+        next_jobsDirs = []
+
+        # complete all the jobs from the workers
+        while jobsDirs:
+            for (j, d) in jobsDirs:
+                with chDirContext(d):
+                    try:
+                        j.next()
+                        next_jobsDirs.append((j, d))
+                    except StopIteration:
+                        pass
+            jobsDirs = next_jobsDirs
+            next_jobsDirs = []
+
         with chDirContext(CENTRAL_REPO_NAME):
             graph = run("git", "log", "--all", "--graph", "--oneline").stdout
             print graph
 
+alice = Worker("Alice", "wonderland", ["sleep", "eat", "drink", "awake"])
+bob = Worker("Bob", "zoo", ["build zoo", "fix zoo", "rebuild zoo", "party"])
+charley = Worker("Charley", "says", [
+    "Stay very close to Dad",
+    "Stoves are dangerous",
+    "Matches are dangerous",
+    "Always tell your mummy before you go off somewhere",
+    "Pulling the table cloth is dangerous",
+    "Strangers are dangerous"])
+dorian = Worker("Dorian", "painting", ["apple", "banana", "cherry", "date"])
 
-doWork(SvnStrategy())
-doWork(SvnPullStrategy())
+workers = [alice, bob, charley, dorian]
+
+scheduleWork(SvnStrategy(), workers)
+scheduleWork(SvnPullStrategy(), workers)
