@@ -76,10 +76,7 @@ class WorkflowBase(object):
 class RebaseMasterWorkflow(WorkflowBase):
 
     def do_item(self, name, project, item):
-        commitAppendToFile(
-            project,
-            item,
-            project + ": " + item + " (" + name + ")")
+        commitAppendToProjectFile(name, project, item)
 
     def finish_project(self, name, project):
         run("git", "pull", "--rebase")
@@ -89,10 +86,7 @@ class RebaseMasterWorkflow(WorkflowBase):
 class SvnWorkflow(WorkflowBase):
 
     def do_item(self, name, project, item):
-        commitAppendToFile(
-            project,
-            item,
-            project + ": " + item + " (" + name + ")")
+        commitAppendToProjectFile(name, project, item)
         run("git", "pull", "--rebase")
         run("git", "push", "origin", "master")
 
@@ -104,10 +98,7 @@ class SvnWorkflow(WorkflowBase):
 class SvnPullWorkflow(WorkflowBase):
 
     def do_item(self, name, project, item):
-        commitAppendToFile(
-            project,
-            item,
-            project + ": " + item + " (" + name + ")")
+        commitAppendToProjectFile(name, project, item)
         run("git", "pull")
         run("git", "push", "origin", "master")
 
@@ -126,10 +117,7 @@ class RebaseTopicFfOnlyWorkflow(WorkflowBase):
         run("git", "rebase", "origin/master")
 
     def do_item(self, name, project, item):
-        commitAppendToFile(
-            project,
-            item,
-            project + ": " + item + " (" + name + ")")
+        commitAppendToProjectFile(name, project, item)
 
     def finish_project(self, name, project):
         run("git", "fetch")
@@ -150,10 +138,7 @@ class RebaseTopicNoFfWorkflow(WorkflowBase):
         run("git", "rebase", "origin/master")
 
     def do_item(self, name, project, item):
-        commitAppendToFile(
-            project,
-            item,
-            project + ": " + item + " (" + name + ")")
+        commitAppendToProjectFile(name, project, item)
 
     def finish_project(self, name, project):
         run("git", "fetch")
@@ -174,10 +159,7 @@ class MergeTopicWorkflow(WorkflowBase):
         run("git", "rebase", "origin/master")
 
     def do_item(self, name, project, item):
-        commitAppendToFile(
-            project,
-            item,
-            project + ": " + item + " (" + name + ")")
+        commitAppendToProjectFile(name, project, item)
 
     def finish_project(self, name, project):
         run("git", "fetch")
@@ -197,10 +179,7 @@ class MergeTopicCatchupWorkflow(WorkflowBase):
         run("git", "rebase", "origin/master")
 
     def do_item(self, name, project, item):
-        commitAppendToFile(
-            project,
-            item,
-            project + ": " + item + " (" + name + ")")
+        commitAppendToProjectFile(name, project, item)
         run("git", "fetch")
         run("git", "merge", "origin/master")
 
