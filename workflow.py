@@ -60,6 +60,15 @@ def commitAppendToProjectFile(name, project, item):
 
 class WorkflowBase(object):
 
+    def title(self):
+        raise Exception("should override this")
+
+    def description(self):
+        raise Exception("should override this")
+
+    def workflow(self):
+        raise Exception("should override this")
+
     def start_project(self, name, project):
         pass
 
@@ -75,39 +84,53 @@ class WorkflowBase(object):
 
 class RebaseMasterWorkflow(WorkflowBase):
 
+    def title(self):
+        return "Rebase on Master"
+
+    def description(self):
+        return "Commit on master, rebase often, push when done"
+
+    def workflow(self):
+        return """
+            .. commit some work ..
+            $ git pull --rebase
+            .. commit some work ..
+            $ git pull --rebase
+            $ git push origin master
+            """
+
     def do_item(self, name, project, item):
         commitAppendToProjectFile(name, project, item)
 
     def finish_project(self, name, project):
         run("git", "pull", "--rebase")
-        run("git", "push", "origin", "master")
-
-
-class SvnWorkflow(WorkflowBase):
-
-    def do_item(self, name, project, item):
-        commitAppendToProjectFile(name, project, item)
-        run("git", "pull", "--rebase")
-        run("git", "push", "origin", "master")
-
-    def finish_project(self, name, project):
-        run("git", "pull", "--rebase")
-        run("git", "push", "origin", "master")
-
-
-class SvnPullWorkflow(WorkflowBase):
-
-    def do_item(self, name, project, item):
-        commitAppendToProjectFile(name, project, item)
-        run("git", "pull")
-        run("git", "push", "origin", "master")
-
-    def finish_project(self, name, project):
-        run("git", "pull")
         run("git", "push", "origin", "master")
 
 
 class RebaseTopicFfOnlyWorkflow(WorkflowBase):
+
+    def title(self):
+        return "Topic branches, rebase, ff-only merge"
+
+    def description(self):
+        return "Work on a topic branch, rebase often; ff-only merge to master"
+
+    def workflow(self):
+        return """
+            $ git checkout -b mywork
+            .. commit some work ..
+            $ git fetch
+            $ git rebase origin/master
+            .. commit some work ..
+            $ git fetch
+            $ git rebase origin/master
+
+            $ git checkout master
+            $ git merge origin/master --ff-only
+            $ git merge mywork --ff-only
+            $ git branch -d mywork
+            $ git push origin master
+            """
 
     def start_project(self, name, project):
         run("git", "checkout", "-b", project)
@@ -130,6 +153,29 @@ class RebaseTopicFfOnlyWorkflow(WorkflowBase):
 
 class RebaseTopicNoFfWorkflow(WorkflowBase):
 
+    def title(self):
+        return "Topic branches, rebase, no-ff merge"
+
+    def description(self):
+        return "Work on a topic branch, rebase often; no-ff merge to master"
+
+    def workflow(self):
+        return """
+            $ git checkout -b mywork
+            .. commit some work ..
+            $ git fetch
+            $ git rebase origin/master
+            .. commit some work ..
+            $ git fetch
+            $ git rebase origin/master
+
+            $ git checkout master
+            $ git merge origin/master --ff-only
+            $ git merge mywork --no-ff
+            $ git branch -d mywork
+            $ git push origin master
+            """
+
     def start_project(self, name, project):
         run("git", "checkout", "-b", project)
 
@@ -151,6 +197,26 @@ class RebaseTopicNoFfWorkflow(WorkflowBase):
 
 class MergeTopicWorkflow(WorkflowBase):
 
+    def title(self):
+        return "Topic branches, merge"
+
+    def description(self):
+        return "Work on a topic branch, merge back to master"
+
+    def workflow(self):
+        return """
+            $ git checkout -b mywork
+            .. commit some work ..
+            .. commit some work ..
+
+            $ git fetch
+            $ git checkout master
+            $ git merge origin/master
+            $ git merge mywork
+            $ git branch -d mywork
+            $ git push origin master
+            """
+
     def start_project(self, name, project):
         run("git", "checkout", "-b", project)
 
@@ -170,6 +236,29 @@ class MergeTopicWorkflow(WorkflowBase):
 
 
 class MergeTopicCatchupWorkflow(WorkflowBase):
+
+    def title(self):
+        return "Topic branches, merge catchup"
+
+    def description(self):
+        return "Work on a topic branch, merge catch-up, merge back to master"
+
+    def workflow(self):
+        return """
+            $ git checkout -b mywork
+            .. commit some work ..
+            $ git fetch
+            $ git merge origin/master
+            .. commit some work ..
+            $ git fetch
+            $ git merge origin/master
+
+            $ git checkout master
+            $ git merge origin/master
+            $ git merge mywork
+            $ git branch -d mywork
+            $ git push origin master
+            """
 
     def start_project(self, name, project):
         run("git", "checkout", "-b", project)
@@ -191,10 +280,76 @@ class MergeTopicCatchupWorkflow(WorkflowBase):
         run("git", "push", "origin", "master")
 
 
-def scheduleWork(workflow, workers):
+class SvnWorkflow(WorkflowBase):
+
+    def title(self):
+        return "The SVN workflow"
+
+    def description(self):
+        return "Work on master, rebase and push every individual commit"
+
+    def workflow(self):
+        return """
+            .. commit some work ..
+            $ git pull --rebase
+            $ git push origin master
+            .. commit some work ..
+            $ git pull --rebase
+            $ git push origin master
+            """
+
+    def do_item(self, name, project, item):
+        commitAppendToProjectFile(name, project, item)
+        run("git", "pull", "--rebase")
+        run("git", "push", "origin", "master")
+
+    def finish_project(self, name, project):
+        run("git", "pull", "--rebase")
+        run("git", "push", "origin", "master")
+
+
+class SvnPullWorkflow(WorkflowBase):
+
+    def title(self):
+        return "The SVN workflow, merge-o-geddon"
+
+    def description(self):
+        return "Work on master, pull and push every individual commit"
+
+    def workflow(self):
+        return """
+            .. commit some work ..
+            $ git pull
+            $ git push origin master
+            .. commit some work ..
+            $ git pull
+            $ git push origin master
+            """
+
+    def do_item(self, name, project, item):
+        commitAppendToProjectFile(name, project, item)
+        run("git", "pull")
+        run("git", "push", "origin", "master")
+
+    def finish_project(self, name, project):
+        run("git", "pull")
+        run("git", "push", "origin", "master")
+
+
+def unindent(s):
+    s = s.strip()
+    lines = s.splitlines()
+    lines = [l.strip() for l in lines]
+    s = '\n'.join(lines)
+    return s
+
+
+def doWorkflow(workflow, workers):
     tempdir_name = "_workflow_tempdir"
     run("rm", "-rf", tempdir_name)
     run("mkdir", tempdir_name)
+
+    graph = ""
     with chDirContext(tempdir_name):
         createCentralizedRepoAndWorkers([w.name for w in workers])
 
@@ -212,10 +367,22 @@ def scheduleWork(workflow, workers):
                         pass
             jobsDirs = next_jobsDirs
             next_jobsDirs = []
-
         with chDirContext(CENTRAL_REPO_NAME):
             graph = run("git", "log", "--all", "--graph", "--oneline").stdout
-            print graph
+
+    print "h2. " + unindent(workflow.title())
+    print unindent(workflow.description())
+    print
+    print "Each worker does:"
+    print "{code}"
+    print unindent(workflow.workflow())
+    print "{code}"
+    print "History:"
+    print "{code}"
+    print graph.strip()
+    print "{code}"
+    print
+
 
 alice = Worker("Alice", "wonderland", ["sleep", "awake"])
 bob = Worker("Bob", "zoo", ["build zoo", "fix zoo", "rebuild zoo", "party"])
@@ -224,10 +391,10 @@ dorian = Worker("Dorian", "painting", ["nose", "eyes", "hair", "vacuous grin"])
 
 workers = [alice, bob, charley, dorian]
 
-scheduleWork(RebaseMasterWorkflow(), workers)
-scheduleWork(SvnWorkflow(), workers)
-scheduleWork(SvnPullWorkflow(), workers)
-scheduleWork(RebaseTopicFfOnlyWorkflow(), workers)
-scheduleWork(RebaseTopicNoFfWorkflow(), workers)
-scheduleWork(MergeTopicWorkflow(), workers)
-scheduleWork(MergeTopicCatchupWorkflow(), workers)
+doWorkflow(RebaseMasterWorkflow(), workers)
+doWorkflow(RebaseTopicFfOnlyWorkflow(), workers)
+doWorkflow(RebaseTopicNoFfWorkflow(), workers)
+doWorkflow(MergeTopicWorkflow(), workers)
+doWorkflow(MergeTopicCatchupWorkflow(), workers)
+doWorkflow(SvnWorkflow(), workers)
+doWorkflow(SvnPullWorkflow(), workers)
