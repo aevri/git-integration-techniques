@@ -51,13 +51,22 @@ def commitAppendToFile(filename, text, message):
     run("git", "commit", filename, "-m", message)
 
 
-class RebaseMasterWorkflow():
+class WorkflowBase(object):
 
     def start_project(self, name, project):
         pass
 
     def update(self, name, project):
         pass
+
+    def do_item(self, name, project, item):
+        raise Exception("should override this")
+
+    def finish_project(self, name, project):
+        raise Exception("should override this")
+
+
+class RebaseMasterWorkflow(WorkflowBase):
 
     def do_item(self, name, project, item):
         commitAppendToFile(
@@ -70,13 +79,7 @@ class RebaseMasterWorkflow():
         run("git", "push", "origin", "master")
 
 
-class SvnWorkflow():
-
-    def start_project(self, name, project):
-        pass
-
-    def update(self, name, project):
-        pass
+class SvnWorkflow(WorkflowBase):
 
     def do_item(self, name, project, item):
         commitAppendToFile(
@@ -91,13 +94,7 @@ class SvnWorkflow():
         run("git", "push", "origin", "master")
 
 
-class SvnPullWorkflow():
-
-    def start_project(self, name, project):
-        pass
-
-    def update(self, name, project):
-        pass
+class SvnPullWorkflow(WorkflowBase):
 
     def do_item(self, name, project, item):
         commitAppendToFile(
