@@ -51,6 +51,13 @@ def commitAppendToFile(filename, text, message):
     run("git", "commit", filename, "-m", message)
 
 
+def commitAppendToProjectFile(name, project, item):
+    commitAppendToFile(
+        project,
+        item,
+        project + ": " + item + " (" + name + ")")
+
+
 class WorkflowBase(object):
 
     def start_project(self, name, project):
@@ -109,6 +116,102 @@ class SvnPullWorkflow(WorkflowBase):
         run("git", "push", "origin", "master")
 
 
+class RebaseTopicFfOnlyWorkflow(WorkflowBase):
+
+    def start_project(self, name, project):
+        run("git", "checkout", "-b", project)
+
+    def update(self, name, project):
+        run("git", "fetch")
+        run("git", "rebase", "origin/master")
+
+    def do_item(self, name, project, item):
+        commitAppendToFile(
+            project,
+            item,
+            project + ": " + item + " (" + name + ")")
+
+    def finish_project(self, name, project):
+        run("git", "fetch")
+        run("git", "rebase", "origin/master")
+        run("git", "checkout", "-B", "master", "origin/master")
+        run("git", "merge", project, "--ff-only")
+        run("git", "branch", "-d", project)
+        run("git", "push", "origin", "master")
+
+
+class RebaseTopicNoFfWorkflow(WorkflowBase):
+
+    def start_project(self, name, project):
+        run("git", "checkout", "-b", project)
+
+    def update(self, name, project):
+        run("git", "fetch")
+        run("git", "rebase", "origin/master")
+
+    def do_item(self, name, project, item):
+        commitAppendToFile(
+            project,
+            item,
+            project + ": " + item + " (" + name + ")")
+
+    def finish_project(self, name, project):
+        run("git", "fetch")
+        run("git", "rebase", "origin/master")
+        run("git", "checkout", "-B", "master", "origin/master")
+        run("git", "merge", project, "--no-ff")
+        run("git", "branch", "-d", project)
+        run("git", "push", "origin", "master")
+
+
+class MergeTopicWorkflow(WorkflowBase):
+
+    def start_project(self, name, project):
+        run("git", "checkout", "-b", project)
+
+    def update(self, name, project):
+        run("git", "fetch")
+        run("git", "rebase", "origin/master")
+
+    def do_item(self, name, project, item):
+        commitAppendToFile(
+            project,
+            item,
+            project + ": " + item + " (" + name + ")")
+
+    def finish_project(self, name, project):
+        run("git", "fetch")
+        run("git", "checkout", "-B", "master", "origin/master")
+        run("git", "merge", project)
+        run("git", "branch", "-d", project)
+        run("git", "push", "origin", "master")
+
+
+class MergeTopicCatchupWorkflow(WorkflowBase):
+
+    def start_project(self, name, project):
+        run("git", "checkout", "-b", project)
+
+    def update(self, name, project):
+        run("git", "fetch")
+        run("git", "rebase", "origin/master")
+
+    def do_item(self, name, project, item):
+        commitAppendToFile(
+            project,
+            item,
+            project + ": " + item + " (" + name + ")")
+        run("git", "fetch")
+        run("git", "merge", "origin/master")
+
+    def finish_project(self, name, project):
+        run("git", "fetch")
+        run("git", "checkout", "-B", "master", "origin/master")
+        run("git", "merge", project)
+        run("git", "branch", "-d", project)
+        run("git", "push", "origin", "master")
+
+
 def scheduleWork(workflow, workers):
     tempdir_name = "_workflow_tempdir"
     run("rm", "-rf", tempdir_name)
@@ -135,19 +238,17 @@ def scheduleWork(workflow, workers):
             graph = run("git", "log", "--all", "--graph", "--oneline").stdout
             print graph
 
-alice = Worker("Alice", "wonderland", ["sleep", "eat", "drink", "awake"])
+alice = Worker("Alice", "wonderland", ["sleep", "awake"])
 bob = Worker("Bob", "zoo", ["build zoo", "fix zoo", "rebuild zoo", "party"])
-charley = Worker("Charley", "says", [
-    "Stay very close to Dad",
-    "Stoves are dangerous",
-    "Matches are dangerous",
-    "Always tell your mummy before you go off somewhere",
-    "Pulling the table cloth is dangerous",
-    "Strangers are dangerous"])
-dorian = Worker("Dorian", "painting", ["apple", "banana", "cherry", "date"])
+charley = Worker("Charley", "says", ["one", "two", "three", "four", "five"])
+dorian = Worker("Dorian", "painting", ["nose", "eyes", "hair", "vacuous grin"])
 
 workers = [alice, bob, charley, dorian]
 
 scheduleWork(RebaseMasterWorkflow(), workers)
 scheduleWork(SvnWorkflow(), workers)
 scheduleWork(SvnPullWorkflow(), workers)
+scheduleWork(RebaseTopicFfOnlyWorkflow(), workers)
+scheduleWork(RebaseTopicNoFfWorkflow(), workers)
+scheduleWork(MergeTopicWorkflow(), workers)
+scheduleWork(MergeTopicCatchupWorkflow(), workers)
