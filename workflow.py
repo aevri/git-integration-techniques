@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+import sys
+
 import phlsys_fs
 import phlsys_subprocess
 
@@ -11,21 +13,78 @@ chDirContext = phlsys_fs.chDirContext
 CENTRAL_REPO_NAME = "origin"
 
 
-def createCentralizedRepoAndWorkers(worker_names):
-    run("mkdir", CENTRAL_REPO_NAME)
-    with chDirContext(CENTRAL_REPO_NAME):
-        run("git", "init", "--bare")
-    for w in worker_names:
-        run("git", "clone", CENTRAL_REPO_NAME, w)
-    worker = worker_names[0]
-    with chDirContext(worker):
-        run("touch", "README")
-        run("git", "add", "README")
-        run("git", "commit", "README", "-m", "initial commit")
-        run("git", "push", "origin", "master")
-    for w in worker_names:
-        with chDirContext(w):
-            run("git", "pull")
+def main():
+    alice = Worker("Alice", "wonderland", ["sleep", "awake"])
+    bob = Worker("Bob", "zoo", ["build zoo", "fix zoo", "rebuild zoo", "party"])
+    charley = Worker("Charley", "says", ["one", "two", "three", "four", "five"])
+    dorian = Worker("Dorian", "painting", ["nose", "eyes", "hair", "vacuous grin"])
+
+    workers = [alice, bob, charley, dorian]
+    workflows = [
+        RebaseMasterWorkflow(),
+        RebaseTopicFfOnlyWorkflow(),
+        RebaseTopicNoFfWorkflow(),
+        SquashTopicWorkflow(),
+        MergeTopicWorkflow(),
+        MergeTopicCatchupWorkflow(),
+        SvnWorkflow(),
+        SvnPullWorkflow()
+    ]
+
+    for workflow in workflows:
+        doWorkflow(workflow, workers)
+
+
+def doWorkflow(workflow, workers):
+    git_log_params = ["--all", "--graph", "--oneline"]
+    graph = simulate(workers, workflow, [git_log_params])[0]
+
+    print "h2. " + unindent(workflow.title())
+    print unindent(workflow.description())
+    print
+    print "Each worker does:"
+    print "{code}"
+    print unindent(workflow.workflow())
+    print "{code}"
+    print "History:"
+    print "{code}"
+    print graph.strip()
+    print "{code}"
+    print
+
+
+def simulate(workers, workflow, git_log_param_list_list):
+    tempdir_name = "_workflow_tempdir"
+    run("rm", "-rf", tempdir_name)
+    run("mkdir", tempdir_name)
+
+    graphs = []
+
+    with chDirContext(tempdir_name):
+        createCentralizedRepoAndWorkers([w.name for w in workers])
+
+        jobsDirs = [(w.work(workflow), w.name) for w in workers]
+        next_jobsDirs = []
+
+        # complete all the jobs from the workers
+        while jobsDirs:
+            for (j, d) in jobsDirs:
+                with chDirContext(d):
+                    try:
+                        j.next()
+                        next_jobsDirs.append((j, d))
+                    except StopIteration:
+                        pass
+            jobsDirs = next_jobsDirs
+            next_jobsDirs = []
+
+        # graph the result on master
+        with chDirContext(CENTRAL_REPO_NAME):
+            for params in git_log_param_list_list:
+                graphs.append(run("git", "log", *params).stdout)
+
+    run("rm", "-rf", tempdir_name)
+    return graphs
 
 
 class Worker():
@@ -42,20 +101,6 @@ class Worker():
             workflow.do_item(self.name, self.project, item)
             yield
         workflow.finish_project(self.name, self.project)
-
-
-def commitAppendToFile(filename, text, message):
-    with open(filename, "a") as f:
-        f.write(text + "\n")
-    run("git", "add", filename)
-    run("git", "commit", filename, "-m", message)
-
-
-def commitAppendToProjectFile(name, project, item):
-    commitAppendToFile(
-        project,
-        item,
-        project + ": " + item + " (" + name + ")")
 
 
 class WorkflowBase(object):
@@ -190,6 +235,7 @@ class SquashTopicWorkflow(WorkflowBase):
         run("git", "commit", "-m", project + " (" + name + ")")
         run("git", "branch", "-D", project)
         run("git", "push", "origin", "master")
+
 
 class RebaseTopicNoFfWorkflow(WorkflowBase):
 
@@ -376,6 +422,37 @@ class SvnPullWorkflow(WorkflowBase):
         run("git", "push", "origin", "master")
 
 
+def createCentralizedRepoAndWorkers(worker_names):
+    run("mkdir", CENTRAL_REPO_NAME)
+    with chDirContext(CENTRAL_REPO_NAME):
+        run("git", "init", "--bare")
+    for w in worker_names:
+        run("git", "clone", CENTRAL_REPO_NAME, w)
+    worker = worker_names[0]
+    with chDirContext(worker):
+        run("touch", "README")
+        run("git", "add", "README")
+        run("git", "commit", "README", "-m", "initial commit")
+        run("git", "push", "origin", "master")
+    for w in worker_names:
+        with chDirContext(w):
+            run("git", "pull")
+
+
+def commitAppendToFile(filename, text, message):
+    with open(filename, "a") as f:
+        f.write(text + "\n")
+    run("git", "add", filename)
+    run("git", "commit", filename, "-m", message)
+
+
+def commitAppendToProjectFile(name, project, item):
+    commitAppendToFile(
+        project,
+        item,
+        project + ": " + item + " (" + name + ")")
+
+
 def unindent(s):
     s = s.strip()
     lines = s.splitlines()
@@ -384,60 +461,5 @@ def unindent(s):
     return s
 
 
-def doWorkflow(workflow, workers):
-    tempdir_name = "_workflow_tempdir"
-    run("rm", "-rf", tempdir_name)
-    run("mkdir", tempdir_name)
-
-    graph = ""
-    with chDirContext(tempdir_name):
-        createCentralizedRepoAndWorkers([w.name for w in workers])
-
-        jobsDirs = [(w.work(workflow), w.name) for w in workers]
-        next_jobsDirs = []
-
-        # complete all the jobs from the workers
-        while jobsDirs:
-            for (j, d) in jobsDirs:
-                with chDirContext(d):
-                    try:
-                        j.next()
-                        next_jobsDirs.append((j, d))
-                    except StopIteration:
-                        pass
-            jobsDirs = next_jobsDirs
-            next_jobsDirs = []
-
-        # graph the result on master
-        with chDirContext(CENTRAL_REPO_NAME):
-            graph = run("git", "log", "--all", "--graph", "--oneline").stdout
-
-    print "h2. " + unindent(workflow.title())
-    print unindent(workflow.description())
-    print
-    print "Each worker does:"
-    print "{code}"
-    print unindent(workflow.workflow())
-    print "{code}"
-    print "History:"
-    print "{code}"
-    print graph.strip()
-    print "{code}"
-    print
-
-
-alice = Worker("Alice", "wonderland", ["sleep", "awake"])
-bob = Worker("Bob", "zoo", ["build zoo", "fix zoo", "rebuild zoo", "party"])
-charley = Worker("Charley", "says", ["one", "two", "three", "four", "five"])
-dorian = Worker("Dorian", "painting", ["nose", "eyes", "hair", "vacuous grin"])
-
-workers = [alice, bob, charley, dorian]
-
-doWorkflow(RebaseMasterWorkflow(), workers)
-doWorkflow(RebaseTopicFfOnlyWorkflow(), workers)
-doWorkflow(RebaseTopicNoFfWorkflow(), workers)
-doWorkflow(SquashTopicWorkflow(), workers)
-doWorkflow(MergeTopicWorkflow(), workers)
-doWorkflow(MergeTopicCatchupWorkflow(), workers)
-doWorkflow(SvnWorkflow(), workers)
-doWorkflow(SvnPullWorkflow(), workers)
+if __name__ == "__main__":
+    sys.exit(main())
