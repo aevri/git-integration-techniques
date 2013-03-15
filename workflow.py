@@ -32,11 +32,17 @@ def main():
         SvnPullWorkflow()
     ]
 
+    g = nx.DiGraph()
+
     for workflow in workflows:
-        doWorkflow(workflow, workers)
+        doWorkflow(g, workflow, workers)
+
+    graphml = '\n'.join(nx.generate_graphml(g))
+    with open("all.graphml", "w") as f:
+        f.write(graphml)
 
 
-def doWorkflow(workflow, workers):
+def doWorkflow(g, workflow, workers):
     git_log_graph_params = ["--all", "--graph", "--oneline"]
     git_log_parents_message_params = ["--format=%f %h %p"]
     git_log_params_list = [
@@ -45,26 +51,24 @@ def doWorkflow(workflow, workers):
     #graph = graphs[0]
     connections = graphs[1]
     #printTeamContent(workflow, graph)
-    filename = ''.join(workflow.title().split())
-    saveGraphMl(filename + ".graphml", connections)
+    namespace = ''.join(workflow.title().split())
+    addToGraph(g, namespace, connections)
 
 
-def saveGraphMl(filename, connections_text):
+def addToGraph(g, namespace, connections_text):
     # parse the text and create a graph
     # render the graph as graphml
 
     # http://thirld.com/blog/2012/01/31/making-yed-import-labels-from-graphml-files/
 
-    g = nx.DiGraph()
     lines = connections_text.splitlines()
-    i = len(lines) - 1
     for l in lines:
         commit_info = l.split()
         subject = commit_info[0]
-        hash = commit_info[1]
+        name = namespace + "_" + commit_info[1]
         parents = commit_info[2:]
 
-        label = str(i)
+        label = ""
         color = "#fdf6e3"
 
         project_to_color = [
@@ -72,22 +76,17 @@ def saveGraphMl(filename, connections_text):
             ["painting", "#cb4b16"],
             ["zoo", "#dc322f"],
             ["wonderland", "#d33682"],
-            ["merge", "#657b83"],
+            ["merge", "#eee8d5"],
             ["initial", "#839496"],
         ]
         for pc in project_to_color:
             if subject.startswith(pc[0]):
                 color = pc[1]
 
-        g.add_node(hash, label=label, color=color)
+        g.add_node(name, label=label, color=color)
         for p in parents:
-            g.add_edge(hash, p)
-
-        i -= 1
-
-    graphml = '\n'.join(nx.generate_graphml(g))
-    with open(filename, "w") as f:
-        f.write(graphml)
+            p_name = namespace + "_" + p
+            g.add_edge(name, p_name)
 
 
 def printTeamContent(workflow, graph):
