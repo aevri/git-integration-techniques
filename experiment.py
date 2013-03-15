@@ -9,6 +9,7 @@ import phlsys_fs
 import phlsys_subprocess
 
 import gwet_workflow
+import gwet_teamcontent
 
 
 run = phlsys_subprocess.run
@@ -51,58 +52,9 @@ def doWorkflow(g, workflow, workers):
     graphs = simulate(workers, workflow, git_log_params_list)
     graph = graphs[0]
     connections = graphs[1]
-    printTeamContent(workflow, graph)
+    gwet_teamcontent.printContent(workflow, graph)
     namespace = ''.join(workflow.title().split())
     addToGraph(g, namespace, connections)
-
-
-def addToGraph(g, namespace, connections_text):
-    # parse the text and create a graph
-    # render the graph as graphml
-
-    # http://thirld.com/blog/2012/01/31/making-yed-import-labels-from-graphml-files/
-
-    lines = connections_text.splitlines()
-    for l in lines:
-        commit_info = l.split()
-        subject = commit_info[0]
-        name = namespace + "_" + commit_info[1]
-        parents = commit_info[2:]
-
-        label = ""
-        color = "#fdf6e3"
-
-        project_to_color = [
-            ["sez", "#b58900"],
-            ["painting", "#cb4b16"],
-            ["zoo", "#dc322f"],
-            ["wonderland", "#d33682"],
-            ["merge", "#eee8d5"],
-            ["initial", "#839496"],
-        ]
-        for pc in project_to_color:
-            if subject.startswith(pc[0]):
-                color = pc[1]
-
-        g.add_node(name, label=label, color=color)
-        for p in parents:
-            p_name = namespace + "_" + p
-            g.add_edge(name, p_name)
-
-
-def printTeamContent(workflow, graph):
-    print "h2. " + unindent(workflow.title())
-    print unindent(workflow.description())
-    print
-    print "Each worker does:"
-    print "{code}"
-    print unindent(workflow.workflow())
-    print "{code}"
-    print "History:"
-    print "{code}"
-    print graph.strip()
-    print "{code}"
-    print
 
 
 def simulate(workers, workflow, git_log_param_list_list):
@@ -142,6 +94,40 @@ def simulate(workers, workflow, git_log_param_list_list):
     return graphs
 
 
+def addToGraph(g, namespace, connections_text):
+    # parse the text and create a graph
+    # render the graph as graphml
+
+    # http://thirld.com/blog/2012/01/31/making-yed-import-labels-from-graphml-files/
+
+    lines = connections_text.splitlines()
+    for l in lines:
+        commit_info = l.split()
+        subject = commit_info[0]
+        name = namespace + "_" + commit_info[1]
+        parents = commit_info[2:]
+
+        label = ""
+        color = "#fdf6e3"
+
+        project_to_color = [
+            ["sez", "#b58900"],
+            ["painting", "#cb4b16"],
+            ["zoo", "#dc322f"],
+            ["wonderland", "#d33682"],
+            ["merge", "#eee8d5"],
+            ["initial", "#839496"],
+        ]
+        for pc in project_to_color:
+            if subject.startswith(pc[0]):
+                color = pc[1]
+
+        g.add_node(name, label=label, color=color)
+        for p in parents:
+            p_name = namespace + "_" + p
+            g.add_edge(name, p_name)
+
+
 class Worker():
 
     def __init__(self, name, project, items):
@@ -173,14 +159,6 @@ def createCentralizedRepoAndWorkers(central_repo_name, worker_names):
     for w in worker_names:
         with chDirContext(w):
             run("git", "pull")
-
-
-def unindent(s):
-    s = s.strip()
-    lines = s.splitlines()
-    lines = [l.strip() for l in lines]
-    s = '\n'.join(lines)
-    return s
 
 
 if __name__ == "__main__":
