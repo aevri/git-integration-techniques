@@ -50,7 +50,7 @@ def main():
     # form that we are happy with
     graphml = '\n'.join(nx.generate_graphml(g))
     filename = "out.graphml"
-    with open("commits.graphml", "w") as f:
+    with open(filename, "w") as f:
         f.write(graphml)
     print "wrote: " + filename
 
