@@ -8,53 +8,45 @@ chDirContext = phlsys_fs.chDirContext
 
 
 def doWorkflow(g, workflow, workers):
-    git_log_graph_params = ["--all", "--graph", "--oneline"]
-    git_log_parents_message_params = ["--format=%f %h %p"]
-    git_log_params_list = [
-        git_log_graph_params, git_log_parents_message_params]
-    graphs = simulate(workers, workflow, git_log_params_list)
-    graph = graphs[0]
-    connections = graphs[1]
-    gwet_teamcontent.printContent(workflow, graph)
-    namespace = ''.join(workflow.title().split())
-    addToGraph(g, namespace, connections)
-
-
-def simulate(workers, workflow, git_log_param_list_list):
     tempdir_name = "_workflow_tempdir"
     run("rm", "-rf", tempdir_name)
     run("mkdir", tempdir_name)
 
-    graphs = []
-
+    central_repo_name = "origin"
     with chDirContext(tempdir_name):
-        central_repo_name = "origin"
         createCentralizedRepoAndWorkers(
             central_repo_name,
             [w.name for w in workers])
-
-        jobsDirs = [(w.work(workflow), w.name) for w in workers]
-        next_jobsDirs = []
-
-        # complete all the jobs from the workers
-        while jobsDirs:
-            for (j, d) in jobsDirs:
-                with chDirContext(d):
-                    try:
-                        j.next()
-                        next_jobsDirs.append((j, d))
-                    except StopIteration:
-                        pass
-            jobsDirs = next_jobsDirs
-            next_jobsDirs = []
+        simulate(workers, workflow)
 
         # graph the result on master
         with chDirContext(central_repo_name):
-            for params in git_log_param_list_list:
-                graphs.append(run("git", "log", *params).stdout)
+            text_graph = run("git", "log", "--graph", "--oneline").stdout
+            connections = run("git", "log", "--format=%f %h %p").stdout
 
     run("rm", "-rf", tempdir_name)
-    return graphs
+
+    gwet_teamcontent.printContent(workflow, text_graph)
+    namespace = ''.join(workflow.title().split())
+    addToGraph(g, namespace, connections)
+
+
+def simulate(workers, workflow):
+
+    jobsDirs = [(w.work(workflow), w.name) for w in workers]
+    next_jobsDirs = []
+
+    # complete all the jobs from the workers
+    while jobsDirs:
+        for (j, d) in jobsDirs:
+            with chDirContext(d):
+                try:
+                    j.next()
+                    next_jobsDirs.append((j, d))
+                except StopIteration:
+                    pass
+        jobsDirs = next_jobsDirs
+        next_jobsDirs = []
 
 
 def createCentralizedRepoAndWorkers(central_repo_name, worker_names):
