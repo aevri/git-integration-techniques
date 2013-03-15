@@ -46,9 +46,9 @@ def doWorkflow(g, workflow, workers):
     git_log_params_list = [
         git_log_graph_params, git_log_parents_message_params]
     graphs = simulate(workers, workflow, git_log_params_list)
-    #graph = graphs[0]
+    graph = graphs[0]
     connections = graphs[1]
-    #printTeamContent(workflow, graph)
+    printTeamContent(workflow, graph)
     namespace = ''.join(workflow.title().split())
     addToGraph(g, namespace, connections)
 
