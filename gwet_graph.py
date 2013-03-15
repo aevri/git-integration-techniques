@@ -33,4 +33,3 @@ def addToGraph(g, namespace, connections_text):
         for p in parents:
             p_name = namespace + "_" + p
             g.add_edge(name, p_name)
-
