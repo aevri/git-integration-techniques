@@ -1,0 +1,25 @@
+Git Workflow Experiments
+========================
+
+This is a small project to explore the git histories that emerge when you use
+particular Git Workflows.
+
+To install dependencies:
+    $ sudo apt-get install python-networkx
+
+To run:
+    $ python experiment.py
+
+The program will print out the relevant content for a Confluence page.
+
+It will also create a GraphML file:
+    all.graphml
+
+This contains all of the workflows, rendered in the 'graphml' format which is
+understood by the interactive graphing tool 'yEd'.
+
+Unfortunately 'yEd' won't render it very well to start with, you need to setup
+a mapping for the node properties, instructions are here:
+    http://thirld.com/blog/2012/01/31/making-yed-import-labels-from-graphml-files/
+
+You should map 'label' and 'color' (uses the Solarized scheme)
