@@ -1,0 +1,59 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+import argparse
+import sys
+
+# networkx must be installed before use
+#   $ sudo apt-get install python-networkx
+import networkx as nx
+
+# important to read - the graphml won't render nicely by default:
+# http://thirld.com/blog/2012/01/31/making-yed-import-labels-from-graphml-files/
+
+import phlsys_subprocess
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Git Commit Graph Generator")
+    parser.add_argument("path", help="path to repo to graph")
+    args = parser.parse_args()
+
+    connections = phlsys_subprocess.run(
+        "git", "log", "--format=%f %h %p", workingDir=args.path).stdout
+
+    lines = connections.splitlines()
+
+    g = nx.DiGraph()
+
+    for l in lines:
+        commit_info = l.split()
+        #subject = commit_info[0]
+        name = commit_info[1]
+        parents = commit_info[2:]
+
+        label = ""
+        color = "#dc322f"
+        if len(parents) > 1:
+            color = "#fdf6e3"
+        elif len(parents) == 0:
+            color = "#839496"
+
+        g.add_node(name, label=label, color=color)
+        for p in parents:
+            p_name = p
+            g.add_edge(name, p_name)
+
+    # write the graph in the 'graphml' format, this is useful because the
+    # 'yEd' editor will allow us to load the graph and manipulate it into a
+    # form that we are happy with
+    graphml = '\n'.join(nx.generate_graphml(g))
+    filename = "out.graphml"
+    with open("commits.graphml", "w") as f:
+        f.write(graphml)
+    print "wrote: " + filename
+
+
+if __name__ == "__main__":
+    sys.exit(main())
