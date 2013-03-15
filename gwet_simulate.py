@@ -74,6 +74,9 @@ def createCentralizedRepoAndWorkers(central_repo_name, worker_names):
             run("git", "pull")
 
 
+# XXX: this doesn't really belong here and should be split up,
+#      we may want to create a standlone tool which can map out
+#      arbitrary git repositories
 def addToGraph(g, namespace, connections_text):
     # parse the text and create a graph
     # render the graph as graphml
