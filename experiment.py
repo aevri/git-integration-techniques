@@ -7,8 +7,15 @@ import sys
 #   $ sudo apt-get install python-networkx
 import networkx as nx
 
-import gwet_workflow
+import phlsys_fs
+import phlsys_subprocess
+
 import gwet_simulate
+import gwet_teamcontent
+import gwet_workflow
+
+run = phlsys_subprocess.run
+chDirContext = phlsys_fs.chDirContext
 
 
 class Worker():
@@ -58,7 +65,7 @@ def main():
 
     # run all the simulations
     for workflow in workflows:
-        gwet_simulate.doWorkflow(g, workflow, workers)
+        doWorkflow(g, workflow, workers)
 
     # write the graph in the 'graphml' format, this is useful because the
     # 'yEd' editor will allow us to load the graph and manipulate it into a
@@ -66,6 +73,47 @@ def main():
     graphml = '\n'.join(nx.generate_graphml(g))
     with open("all.graphml", "w") as f:
         f.write(graphml)
+
+
+def doWorkflow(g, workflow, workers):
+    tempdir_name = "_workflow_tempdir"
+    run("rm", "-rf", tempdir_name)
+    run("mkdir", tempdir_name)
+
+    central_repo_name = "origin"
+    with chDirContext(tempdir_name):
+        createCentralizedRepoAndWorkers(
+            central_repo_name,
+            [w.name for w in workers])
+        gwet_simulate.execute(workers, workflow)
+
+        # graph the result on master
+        with chDirContext(central_repo_name):
+            text_graph = run("git", "log", "--graph", "--oneline").stdout
+            connections = run("git", "log", "--format=%f %h %p").stdout
+
+    run("rm", "-rf", tempdir_name)
+
+    gwet_teamcontent.printContent(workflow, text_graph)
+    namespace = ''.join(workflow.title().split())
+    gwet_simulate.addToGraph(g, namespace, connections)
+
+
+def createCentralizedRepoAndWorkers(central_repo_name, worker_names):
+    run("mkdir", central_repo_name)
+    with chDirContext(central_repo_name):
+        run("git", "init", "--bare")
+    for w in worker_names:
+        run("git", "clone", central_repo_name, w)
+    worker = worker_names[0]
+    with chDirContext(worker):
+        run("touch", "README")
+        run("git", "add", "README")
+        run("git", "commit", "README", "-m", "initial commit")
+        run("git", "push", "origin", "master")
+    for w in worker_names:
+        with chDirContext(w):
+            run("git", "pull")
 
 
 if __name__ == "__main__":

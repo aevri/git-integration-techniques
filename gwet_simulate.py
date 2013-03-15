@@ -1,37 +1,11 @@
 import phlsys_fs
 import phlsys_subprocess
 
-import gwet_teamcontent
-
 run = phlsys_subprocess.run
 chDirContext = phlsys_fs.chDirContext
 
 
-def doWorkflow(g, workflow, workers):
-    tempdir_name = "_workflow_tempdir"
-    run("rm", "-rf", tempdir_name)
-    run("mkdir", tempdir_name)
-
-    central_repo_name = "origin"
-    with chDirContext(tempdir_name):
-        createCentralizedRepoAndWorkers(
-            central_repo_name,
-            [w.name for w in workers])
-        simulate(workers, workflow)
-
-        # graph the result on master
-        with chDirContext(central_repo_name):
-            text_graph = run("git", "log", "--graph", "--oneline").stdout
-            connections = run("git", "log", "--format=%f %h %p").stdout
-
-    run("rm", "-rf", tempdir_name)
-
-    gwet_teamcontent.printContent(workflow, text_graph)
-    namespace = ''.join(workflow.title().split())
-    addToGraph(g, namespace, connections)
-
-
-def simulate(workers, workflow):
+def execute(workers, workflow):
 
     jobsDirs = [(w.work(workflow), w.name) for w in workers]
     next_jobsDirs = []
@@ -47,23 +21,6 @@ def simulate(workers, workflow):
                     pass
         jobsDirs = next_jobsDirs
         next_jobsDirs = []
-
-
-def createCentralizedRepoAndWorkers(central_repo_name, worker_names):
-    run("mkdir", central_repo_name)
-    with chDirContext(central_repo_name):
-        run("git", "init", "--bare")
-    for w in worker_names:
-        run("git", "clone", central_repo_name, w)
-    worker = worker_names[0]
-    with chDirContext(worker):
-        run("touch", "README")
-        run("git", "add", "README")
-        run("git", "commit", "README", "-m", "initial commit")
-        run("git", "push", "origin", "master")
-    for w in worker_names:
-        with chDirContext(w):
-            run("git", "pull")
 
 
 # XXX: this doesn't really belong here and should be split up,
