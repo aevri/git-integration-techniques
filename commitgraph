@@ -18,10 +18,14 @@ def main():
     parser = argparse.ArgumentParser(
         description="Git Commit Graph Generator")
     parser.add_argument("path", help="path to repo to graph")
+    parser.add_argument("--range", help="commits, e.g.'HEAD~50..'", default="")
     args = parser.parse_args()
 
-    connections = phlsys_subprocess.run(
-        "git", "log", "--format=%f %h %p", workingDir=args.path).stdout
+    git_args = ["git", "log", "--all", "--format=%f %h %p"]
+    if args.range:
+        git_args.append(args.range)
+
+    connections = phlsys_subprocess.run(*git_args, workingDir=args.path).stdout
 
     lines = connections.splitlines()
 
