@@ -7,9 +7,13 @@ import sys
 #   $ sudo apt-get install python-networkx
 import networkx as nx
 
+# important to read - the graphml won't render nicely by default:
+# http://thirld.com/blog/2012/01/31/making-yed-import-labels-from-graphml-files/
+
 import phlsys_fs
 import phlsys_subprocess
 
+import gwet_graph
 import gwet_simulate
 import gwet_teamcontent
 import gwet_workflow
@@ -96,7 +100,7 @@ def doWorkflow(g, workflow, workers):
 
     gwet_teamcontent.printContent(workflow, text_graph)
     namespace = ''.join(workflow.title().split())
-    gwet_simulate.addToGraph(g, namespace, connections)
+    gwet_graph.addToGraph(g, namespace, connections)
 
 
 def createCentralizedRepoAndWorkers(central_repo_name, worker_names):
