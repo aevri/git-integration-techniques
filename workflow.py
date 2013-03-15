@@ -3,6 +3,7 @@
 
 import sys
 
+import networkx as nx
 import phlsys_fs
 import phlsys_subprocess
 
@@ -15,9 +16,9 @@ CENTRAL_REPO_NAME = "origin"
 
 def main():
     alice = Worker("Alice", "wonderland", ["sleep", "awake"])
-    bob = Worker("Bob", "zoo", ["build zoo", "fix zoo", "rebuild zoo", "party"])
-    charley = Worker("Charley", "says", ["one", "two", "three", "four", "five"])
-    dorian = Worker("Dorian", "painting", ["nose", "eyes", "hair", "vacuous grin"])
+    bob = Worker("Bob", "zoo", ["build zoo", "fix zoo", "rebuild zoo"])
+    charley = Worker("Charley", "sez", ["one", "two", "three", "four", "five"])
+    dorian = Worker("Dorian", "painting", ["nose", "eyes", "hair", "grin"])
 
     workers = [alice, bob, charley, dorian]
     workflows = [
@@ -36,9 +37,60 @@ def main():
 
 
 def doWorkflow(workflow, workers):
-    git_log_params = ["--all", "--graph", "--oneline"]
-    graph = simulate(workers, workflow, [git_log_params])[0]
+    git_log_graph_params = ["--all", "--graph", "--oneline"]
+    git_log_parents_message_params = ["--format=%f %h %p"]
+    git_log_params_list = [
+        git_log_graph_params, git_log_parents_message_params]
+    graphs = simulate(workers, workflow, git_log_params_list)
+    #graph = graphs[0]
+    connections = graphs[1]
+    #printTeamContent(workflow, graph)
+    filename = ''.join(workflow.title().split())
+    saveGraphMl(filename + ".graphml", connections)
 
+
+def saveGraphMl(filename, connections_text):
+    # parse the text and create a graph
+    # render the graph as graphml
+
+    # http://thirld.com/blog/2012/01/31/making-yed-import-labels-from-graphml-files/
+
+    g = nx.DiGraph()
+    lines = connections_text.splitlines()
+    i = len(lines) - 1
+    for l in lines:
+        commit_info = l.split()
+        subject = commit_info[0]
+        hash = commit_info[1]
+        parents = commit_info[2:]
+
+        label = str(i)
+        color = "#fdf6e3"
+
+        project_to_color = [
+            ["sez", "#b58900"],
+            ["painting", "#cb4b16"],
+            ["zoo", "#dc322f"],
+            ["wonderland", "#d33682"],
+            ["merge", "#657b83"],
+            ["initial", "#839496"],
+        ]
+        for pc in project_to_color:
+            if subject.startswith(pc[0]):
+                color = pc[1]
+
+        g.add_node(hash, label=label, color=color)
+        for p in parents:
+            g.add_edge(hash, p)
+
+        i -= 1
+
+    graphml = '\n'.join(nx.generate_graphml(g))
+    with open(filename, "w") as f:
+        f.write(graphml)
+
+
+def printTeamContent(workflow, graph):
     print "h2. " + unindent(workflow.title())
     print unindent(workflow.description())
     print
@@ -83,7 +135,7 @@ def simulate(workers, workflow, git_log_param_list_list):
             for params in git_log_param_list_list:
                 graphs.append(run("git", "log", *params).stdout)
 
-    run("rm", "-rf", tempdir_name)
+    #run("rm", "-rf", tempdir_name)
     return graphs
 
 
