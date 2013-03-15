@@ -11,8 +11,6 @@ import phlsys_subprocess
 run = phlsys_subprocess.run
 chDirContext = phlsys_fs.chDirContext
 
-CENTRAL_REPO_NAME = "origin"
-
 
 def main():
     alice = Worker("Alice", "wonderland", ["sleep", "awake"])
@@ -137,7 +135,7 @@ def simulate(workers, workflow, git_log_param_list_list):
             for params in git_log_param_list_list:
                 graphs.append(run("git", "log", *params).stdout)
 
-    #run("rm", "-rf", tempdir_name)
+    run("rm", "-rf", tempdir_name)
     return graphs
 
 
@@ -477,11 +475,11 @@ class SvnPullWorkflow(WorkflowBase):
 
 
 def createCentralizedRepoAndWorkers(central_repo_name, worker_names):
-    run("mkdir", CENTRAL_REPO_NAME)
-    with chDirContext(CENTRAL_REPO_NAME):
+    run("mkdir", central_repo_name)
+    with chDirContext(central_repo_name):
         run("git", "init", "--bare")
     for w in worker_names:
-        run("git", "clone", CENTRAL_REPO_NAME, w)
+        run("git", "clone", central_repo_name, w)
     worker = worker_names[0]
     with chDirContext(worker):
         run("touch", "README")
