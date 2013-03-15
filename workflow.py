@@ -112,7 +112,10 @@ def simulate(workers, workflow, git_log_param_list_list):
     graphs = []
 
     with chDirContext(tempdir_name):
-        createCentralizedRepoAndWorkers([w.name for w in workers])
+        central_repo_name = "origin"
+        createCentralizedRepoAndWorkers(
+            central_repo_name,
+            [w.name for w in workers])
 
         jobsDirs = [(w.work(workflow), w.name) for w in workers]
         next_jobsDirs = []
@@ -130,7 +133,7 @@ def simulate(workers, workflow, git_log_param_list_list):
             next_jobsDirs = []
 
         # graph the result on master
-        with chDirContext(CENTRAL_REPO_NAME):
+        with chDirContext(central_repo_name):
             for params in git_log_param_list_list:
                 graphs.append(run("git", "log", *params).stdout)
 
@@ -473,7 +476,7 @@ class SvnPullWorkflow(WorkflowBase):
         run("git", "push", "origin", "master")
 
 
-def createCentralizedRepoAndWorkers(worker_names):
+def createCentralizedRepoAndWorkers(central_repo_name, worker_names):
     run("mkdir", CENTRAL_REPO_NAME)
     with chDirContext(CENTRAL_REPO_NAME):
         run("git", "init", "--bare")
