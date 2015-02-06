@@ -74,10 +74,12 @@ def make_graph(commits):
     return graph
 
 
-def yield_commits(repo_dir, range_=""):
-    git_args = ["git", "log", "--all", "--format=%f:%h:%p:%d"]
+def yield_commits(repo_dir, range_=None):
+    git_args = ["git", "log", "--format=%f:%h:%p:%d"]
     if range_:
         git_args.append(range_)
+    else:
+        git_args.append("--all")
 
     for line in yield_stdout(git_args, cwd=repo_dir):
         commit_info = line.split(':')
