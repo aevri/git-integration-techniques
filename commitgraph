@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # encoding: utf-8
 
 import argparse
@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 # networkx must be installed before use
-#   $ sudo apt-get install python-networkx
+#   $ sudo apt-get install python3-networkx
 #
 import networkx
 
@@ -17,26 +17,21 @@ import networkx
 def main():
     parser = argparse.ArgumentParser(
         description="Git Commit Graph Generator")
-    parser.add_argument("path", help="path to repo to graph")
-    parser.add_argument("--range", help="commits, e.g.'HEAD~50..'", default="")
+
+    parser.add_argument(
+        "path",
+        help="path to git reposiory",
+        default=".")
+
+    parser.add_argument(
+        "--range",
+        help="commits, e.g.'HEAD~50..'",
+        default="")
+
     args = parser.parse_args()
 
-    git_args = ["git", "log", "--all", "--format=%f %h %p"]
-    if args.range:
-        git_args.append(args.range)
-
-    connections = subprocess.check_output(*git_args, workingDir=args.path)
-
-    lines = connections.splitlines()
-
     g = networkx.DiGraph()
-
-    for l in lines:
-        commit_info = l.split()
-        # subject = commit_info[0]
-        name = commit_info[1]
-        parents = commit_info[2:]
-
+    for subject, name, parents in yield_commits(args.path, args.range):
         label = ""
         color = "#dc322f"
         if len(parents) > 1:
@@ -56,7 +51,34 @@ def main():
     filename = "out.graphml"
     with open(filename, "w") as f:
         f.write(graphml)
-    print "wrote: " + filename
+    print("wrote: " + filename)
+
+
+def yield_commits(repo_dir, range_=""):
+    git_args = ["git", "log", "--all", "--format=%f %h %p"]
+    if range_:
+        git_args.append(range_)
+
+    for line in yield_stdout(git_args, cwd=repo_dir):
+        commit_info = line.split()
+        subject = commit_info[0]
+        name = commit_info[1]
+        parents = commit_info[2:]
+        yield subject, name, parents
+
+
+def yield_stdout(args, cwd):
+
+    process = subprocess.Popen(
+        args,
+        stdout=subprocess.PIPE,
+        bufsize=1,
+        universal_newlines=True,
+        cwd=cwd)
+
+    with process:
+        for line in process.stdout:
+            yield line
 
 
 if __name__ == "__main__":
