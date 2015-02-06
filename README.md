@@ -6,7 +6,7 @@ particular Git Workflows.
 
 To install dependencies:
 
-    $ sudo apt-get install python-networkx
+    $ sudo apt-get install python3-networkx
 
 To run grapher:
 
@@ -14,7 +14,7 @@ To run grapher:
 
 It will write the file
 
-    commits.graphml
+    out.graphml
 
 This contains all the commits from the repository, in 'graphml' format.
 
