@@ -36,8 +36,26 @@ def main():
 
     args = parser.parse_args()
 
-    g = networkx.DiGraph()
-    for subject, name, parents in yield_commits(args.input, args.range):
+    commits = yield_commits(args.input, args.range)
+    graph = make_graph(commits)
+    write_graphml(graph, args.output)
+    print("wrote:", args.output)
+
+
+def write_graphml(graph, filename):
+
+    # write the graph in the 'graphml' format, this is useful because the
+    # 'yEd' editor will allow us to load the graph and manipulate it into a
+    # form that we are happy with
+    graphml = '\n'.join(networkx.generate_graphml(graph))
+    with open(filename, "w") as f:
+        f.write(graphml)
+
+
+def make_graph(commits):
+    graph = networkx.DiGraph()
+
+    for subject, name, parents in commits:
         label = ""
         color = "#dc322f"
         if len(parents) > 1:
@@ -45,19 +63,12 @@ def main():
         elif len(parents) == 0:
             color = "#839496"
 
-        g.add_node(name, label=label, color=color)
+        graph.add_node(name, label=label, color=color)
         for p in parents:
             p_name = p
-            g.add_edge(name, p_name)
+            graph.add_edge(name, p_name)
 
-    # write the graph in the 'graphml' format, this is useful because the
-    # 'yEd' editor will allow us to load the graph and manipulate it into a
-    # form that we are happy with
-    graphml = '\n'.join(networkx.generate_graphml(g))
-    filename = args.output
-    with open(filename, "w") as f:
-        f.write(graphml)
-    print("wrote: " + filename)
+    return graph
 
 
 def yield_commits(repo_dir, range_=""):
