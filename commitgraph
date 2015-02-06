@@ -15,6 +15,9 @@ import networkx
 
 
 def main():
+
+    default_output = 'out.graphml'
+
     parser = argparse.ArgumentParser(
         description="Git commit graph generator")
 
@@ -26,7 +29,7 @@ def main():
 
     parser.add_argument(
         "--output",
-        help="path to output graphml, defaults to 'out.graphml'.",
+        help="path to output graphml, defaults to {}.".format(default_output),
         default="out.graphml")
 
     parser.add_argument(
@@ -55,7 +58,7 @@ def write_graphml(graph, filename):
 def make_graph(commits):
     graph = networkx.DiGraph()
 
-    for subject, name, parents in commits:
+    for subject, name, parents, _decorations in commits:
         label = ""
         color = "#dc322f"
         if len(parents) > 1:
@@ -72,16 +75,17 @@ def make_graph(commits):
 
 
 def yield_commits(repo_dir, range_=""):
-    git_args = ["git", "log", "--all", "--format=%f %h %p"]
+    git_args = ["git", "log", "--all", "--format=%f:%h:%p:%d"]
     if range_:
         git_args.append(range_)
 
     for line in yield_stdout(git_args, cwd=repo_dir):
-        commit_info = line.split()
+        commit_info = line.split(':')
         subject = commit_info[0]
         name = commit_info[1]
-        parents = commit_info[2:]
-        yield subject, name, parents
+        parents = commit_info[2].split()
+        decorations = commit_info[3].strip().strip('()').split()
+        yield subject, name, parents, decorations
 
 
 def yield_stdout(args, cwd):
