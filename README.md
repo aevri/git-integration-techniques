@@ -26,15 +26,3 @@ a mapping for the node properties, instructions are
 [here](http://thirld.com/blog/2012/01/31/making-yed-import-labels-from-graphml-files/).
 
 You should map the `label` and `color` properties.
-
-----------------------------------------
-
-To run the workflow experiments:
-
-    $ python experiment.py
-
-The program will print out the relevant content for a Confluence page.
-
-It will also create a GraphML file:
-
-    all.graphml

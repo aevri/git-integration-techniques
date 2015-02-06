@@ -2,16 +2,16 @@
 # encoding: utf-8
 
 import argparse
+import subprocess
 import sys
 
 # networkx must be installed before use
 #   $ sudo apt-get install python-networkx
-import networkx as nx
+#
+import networkx
 
 # important to read - the graphml won't render nicely by default:
 # http://thirld.com/blog/2012/01/31/making-yed-import-labels-from-graphml-files/
-
-import phlsys_subprocess
 
 
 def main():
@@ -25,15 +25,15 @@ def main():
     if args.range:
         git_args.append(args.range)
 
-    connections = phlsys_subprocess.run(*git_args, workingDir=args.path).stdout
+    connections = subprocess.check_output(*git_args, workingDir=args.path)
 
     lines = connections.splitlines()
 
-    g = nx.DiGraph()
+    g = networkx.DiGraph()
 
     for l in lines:
         commit_info = l.split()
-        #subject = commit_info[0]
+        # subject = commit_info[0]
         name = commit_info[1]
         parents = commit_info[2:]
 
@@ -52,7 +52,7 @@ def main():
     # write the graph in the 'graphml' format, this is useful because the
     # 'yEd' editor will allow us to load the graph and manipulate it into a
     # form that we are happy with
-    graphml = '\n'.join(nx.generate_graphml(g))
+    graphml = '\n'.join(networkx.generate_graphml(g))
     filename = "out.graphml"
     with open(filename, "w") as f:
         f.write(graphml)
