@@ -79,6 +79,8 @@ class Colours(object):
 def make_graph(commits):
     graph = networkx.DiGraph()
 
+    next_parent0 = None
+
     for subject, name, parents, _decorations in commits:
         label = ""
         color = Colours.red
@@ -87,10 +89,22 @@ def make_graph(commits):
         elif len(parents) == 0:
             color = Colours.orange
 
+        if next_parent0 is None or name == next_parent0:
+            is_parent0_lineage = True
+        else:
+            is_parent0_lineage = False
+
         graph.add_node(name, label=label, color=color)
-        for p in parents:
+        for i, p in enumerate(parents):
+            if is_parent0_lineage and not i:
+                edge_color = Colours.orange
+            else:
+                edge_color = Colours.black
             p_name = p
-            graph.add_edge(name, p_name)
+            graph.add_edge(name, p_name, color=edge_color)
+
+        if is_parent0_lineage and parents:
+            next_parent0 = parents[0]
 
     return graph
 
