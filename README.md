@@ -1,5 +1,5 @@
-Git Workflow Experiments
-========================
+Git Integration Techniques
+==========================
 
 This is a small project to explore the git histories that emerge when you use
 particular Git Workflows.
