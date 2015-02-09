@@ -60,11 +60,22 @@ def make_graph(commits):
 
     next_parent0 = None
 
-    for subject, name, parents, _decorations in commits:
+    for subject, name, parents, _decorations, merge_base in commits:
+
+        is_no_ff = False
+        if len(parents) > 1:
+            for p in parents:
+                if merge_base.startswith(p):
+                    is_no_ff = True
+                    break
+
         label = ""
         color = "#dc322f"
         if len(parents) > 1:
-            color = "#fdf6e3"
+            if is_no_ff:
+                color = "#000000"
+            else:
+                color = "#fdf6e3"
         elif len(parents) == 0:
             color = "#839496"
 
@@ -74,6 +85,7 @@ def make_graph(commits):
             is_parent0_lineage = False
 
         graph.add_node(name, label=label, color=color)
+
         for i, p in enumerate(parents):
             if is_parent0_lineage and not i:
                 edge_color = "#ff6600"
@@ -101,7 +113,21 @@ def yield_commits(repo_dir, range_=None):
         name = commit_info[1]
         parents = commit_info[2].split()
         decorations = commit_info[3].strip().strip('()').split()
-        yield subject, name, parents, decorations
+        if len(parents) > 1:
+            merge_base = git_merge_base(repo_dir, *parents)
+        elif len(parents) == 1:
+            merge_base = parents[0]
+        else:
+            merge_base = None
+        yield subject, name, parents, decorations, merge_base
+
+
+def git_merge_base(repo_dir, *commits):
+    return call_git(repo_dir, 'merge-base', *commits)
+
+
+def call_git(cwd, *args):
+    return '\n'.join(list(yield_stdout(('git', ) + args, cwd)))
 
 
 def yield_stdout(args, cwd):
