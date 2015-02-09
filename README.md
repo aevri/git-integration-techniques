@@ -30,3 +30,13 @@ You should map the `label` and `color` properties.
 For example, recent commits on Git:
 
 ![Sample output](https://raw.githubusercontent.com/aevri/git-integration-techniques/data/git.png)
+
+----------------------------------------
+
+To run the workflow experiments:
+    $ python experiment.py
+
+The program will print out the relevant content for a Confluence page.
+
+It will also create a GraphML file:
+    all.graphml
