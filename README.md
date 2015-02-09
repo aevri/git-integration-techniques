@@ -26,3 +26,7 @@ a mapping for the node properties, instructions are
 [here](http://thirld.com/blog/2012/01/31/making-yed-import-labels-from-graphml-files/).
 
 You should map the `label` and `color` properties.
+
+For example, recent commits on Git:
+
+![Sample output](https://raw.githubusercontent.com/aevri/git-integration-techniques/data/git.png)
