@@ -91,16 +91,32 @@ def doWorkflow(g, workflow, workers):
             [w.name for w in workers])
         execute(workers, workflow)
 
-        # graph the result on master
-        with chDirContext(central_repo_name):
-            text_graph = run("git", "log", "--graph", "--oneline").stdout
-            connections = run("git", "log", "--format=%f %h %p").stdout
+        text_graph = call_git(central_repo_name, "log", "--graph", "--oneline")
+        connections = call_git(central_repo_name, "log", "--format=%f %h %p")
 
     run("rm", "-rf", tempdir_name)
 
     printContent(workflow, text_graph)
     namespace = ''.join(workflow.title().split())
     addToGraph(g, namespace, connections)
+
+
+def call_git(cwd, *args):
+    return ''.join(list(yield_stdout(('git', ) + args, cwd)))
+
+
+def yield_stdout(args, cwd):
+
+    process = subprocess.Popen(
+        args,
+        stdout=subprocess.PIPE,
+        bufsize=1,
+        universal_newlines=True,
+        cwd=cwd)
+
+    with process:
+        for line in process.stdout:
+            yield line
 
 
 def createCentralizedRepoAndWorkers(central_repo_name, worker_names):
