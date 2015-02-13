@@ -13,6 +13,8 @@ import sys
 #   $ sudo apt-get install python-networkx
 import networkx
 
+import gitgraph.common
+
 # important to read - the graphml won't render nicely by default:
 # http://thirld.com/blog/2012/01/31/making-yed-import-labels-from-graphml-files/
 
@@ -85,14 +87,17 @@ def doWorkflow(g, workflow, workers):
     run("mkdir", tempdir_name)
 
     central_repo_name = "origin"
+
+    repo = gitgraph.common.GitRepo(central_repo_name)
+
     with chDirContext(tempdir_name):
         createCentralizedRepoAndWorkers(
             central_repo_name,
             [w.name for w in workers])
         execute(workers, workflow)
 
-        text_graph = call_git(central_repo_name, "log", "--graph", "--oneline")
-        connections = call_git(central_repo_name, "log", "--format=%f %h %p")
+        text_graph = repo("log", "--graph", "--oneline")
+        connections = repo("log", "--format=%f %h %p")
 
     run("rm", "-rf", tempdir_name)
 
