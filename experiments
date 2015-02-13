@@ -5,7 +5,6 @@
 
 from contextlib import contextmanager
 import collections
-import doctest
 import os
 import subprocess
 import sys
@@ -127,8 +126,8 @@ def addToGraph(g, namespace, connections_text):
     Uses the Solarized color scheme.
 
     """
-    # XXX: this should be split up, we may want to create a standlone tool which
-    #      can map out arbitrary git repositories
+    # XXX: this should be split up, we may want to create a standlone tool
+    # which can map out arbitrary git repositories
 
     lines = connections_text.splitlines()
     for l in lines:
@@ -157,6 +156,7 @@ def addToGraph(g, namespace, connections_text):
             p_name = namespace + "_" + p
             g.add_edge(name, p_name)
 
+
 def execute(workers, workflow):
 
     jobsDirs = [(w.work(workflow), w.name) for w in workers]
@@ -173,6 +173,8 @@ def execute(workers, workflow):
                     pass
         jobsDirs = next_jobsDirs
         next_jobsDirs = []
+
+
 def unindent(s):
     s = s.strip()
     lines = s.splitlines()
@@ -194,6 +196,7 @@ def printContent(workflow, graph):
     print graph.strip()
     print "{code}"
     print
+
 
 def commitAppendToFile(filename, text, message):
     with open(filename, "a") as f:
@@ -526,7 +529,9 @@ class SvnPullWorkflow(WorkflowBase):
     def finish_project(self, name, project):
         run("git", "pull")
         run("git", "push", "origin", "master")
-#TODO: write a docstring with doctests when we have a tempdir helper
+
+
+# TODO: write a docstring with doctests when we have a tempdir helper
 @contextmanager
 def chDirContext(newDir):
     savedPath = os.getcwd()
@@ -537,7 +542,8 @@ def chDirContext(newDir):
         os.chdir(savedPath)
 
 
-#def run(*args, workingDir=None): <-- supported in Python 3, use kwargs for now
+# def run(*args, workingDir=None): <-- supported in Python 3, use kwargs for
+# now
 def run(*args, **kwargs):
     """Execute the command described by args, return a 'RunResult'.
 
