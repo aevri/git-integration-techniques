@@ -16,20 +16,12 @@ import phlsys_subprocess
 import subprocess
 import sys
 
-run = phlsys_subprocess.run
-chDirContext = phlsys_fs.chDirContext
-
-
 # networkx must be installed before use
 #   $ sudo apt-get install python-networkx
 import networkx as nx
 
 # important to read - the graphml won't render nicely by default:
 # http://thirld.com/blog/2012/01/31/making-yed-import-labels-from-graphml-files/
-
-run = phlsys_subprocess.run
-run = phlsys_subprocess.run
-chDirContext = phlsys_fs.chDirContext
 
 RunResult = collections.namedtuple(
     'phlsys_subprocess__RunResult',
