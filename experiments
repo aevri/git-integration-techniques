@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # encoding: utf-8
 
 """Interact with other programs using command-line semantics."""
@@ -167,7 +167,7 @@ def execute(workers, workflow):
         for (j, d) in jobsDirs:
             with chDirContext(d):
                 try:
-                    j.next()
+                    next(j)
                     next_jobsDirs.append((j, d))
                 except StopIteration:
                     pass
@@ -184,18 +184,18 @@ def unindent(s):
 
 
 def printContent(workflow, graph):
-    print "h2. " + unindent(workflow.title())
-    print unindent(workflow.description())
-    print
-    print "Each worker does:"
-    print "{code}"
-    print unindent(workflow.workflow())
-    print "{code}"
-    print "History:"
-    print "{code}"
-    print graph.strip()
-    print "{code}"
-    print
+    print("h2. " + unindent(workflow.title()))
+    print(unindent(workflow.description()))
+    print()
+    print("Each worker does:")
+    print("{code}")
+    print(unindent(workflow.workflow()))
+    print("{code}")
+    print("History:")
+    print("{code}")
+    print(graph.strip())
+    print("{code}")
+    print()
 
 
 def commitAppendToFile(filename, text, message):
