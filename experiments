@@ -1,0 +1,700 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+import sys
+
+# networkx must be installed before use
+#   $ sudo apt-get install python-networkx
+import networkx as nx
+
+# important to read - the graphml won't render nicely by default:
+# http://thirld.com/blog/2012/01/31/making-yed-import-labels-from-graphml-files/
+
+import phlsys_fs
+import phlsys_subprocess
+
+import gwet_graph
+import gwet_simulate
+import gwet_teamcontent
+import gwet_workflow
+
+run = phlsys_subprocess.run
+chDirContext = phlsys_fs.chDirContext
+
+
+class Worker():
+    """Simulate a person working with a supplied workflow.
+
+    The worker has a name and is assigned a project to work on, they will
+    perform the work in supplied list of items.
+    """
+
+    def __init__(self, name, project, items):
+        self.name = name
+        self.project = project
+        self.items = items
+
+    def work(self, workflow):
+        yield  # XXX: we must yield immediately due to a quirk of simulate()
+        workflow.start_project(self.name, self.project)
+        for item in self.items:
+            workflow.do_item(self.name, self.project, item)
+            yield
+        workflow.finish_project(self.name, self.project)
+
+
+def main():
+    # setup our workers
+    alice = Worker("Alice", "wonderland", ["sleep", "awake"])
+    bob = Worker("Bob", "zoo", ["build zoo", "fix zoo", "rebuild zoo"])
+    charley = Worker("Charley", "sez", ["one", "two", "three", "four", "five"])
+    dorian = Worker("Dorian", "painting", ["nose", "eyes", "hair", "grin"])
+
+    # the workers will participate in all of these workflows
+    workers = [alice, bob, charley, dorian]
+    workflows = [
+        gwet_workflow.RebaseMasterWorkflow(),
+        gwet_workflow.RebaseTopicFfOnlyWorkflow(),
+        gwet_workflow.RebaseTopicNoFfWorkflow(),
+        gwet_workflow.SquashTopicWorkflow(),
+        gwet_workflow.MergeTopicWorkflow(),
+        gwet_workflow.MergeTopicCatchupWorkflow(),
+        gwet_workflow.SvnWorkflow(),
+        gwet_workflow.SvnPullWorkflow()
+    ]
+
+    # we'll be building a graph of all the commits on master at the end
+    # of each simulation
+    g = nx.DiGraph()
+
+    # run all the simulations
+    for workflow in workflows:
+        doWorkflow(g, workflow, workers)
+
+    # write the graph in the 'graphml' format, this is useful because the
+    # 'yEd' editor will allow us to load the graph and manipulate it into a
+    # form that we are happy with
+    graphml = '\n'.join(nx.generate_graphml(g))
+    with open("all.graphml", "w") as f:
+        f.write(graphml)
+
+
+def doWorkflow(g, workflow, workers):
+    tempdir_name = "_workflow_tempdir"
+    run("rm", "-rf", tempdir_name)
+    run("mkdir", tempdir_name)
+
+    central_repo_name = "origin"
+    with chDirContext(tempdir_name):
+        createCentralizedRepoAndWorkers(
+            central_repo_name,
+            [w.name for w in workers])
+        gwet_simulate.execute(workers, workflow)
+
+        # graph the result on master
+        with chDirContext(central_repo_name):
+            text_graph = run("git", "log", "--graph", "--oneline").stdout
+            connections = run("git", "log", "--format=%f %h %p").stdout
+
+    run("rm", "-rf", tempdir_name)
+
+    gwet_teamcontent.printContent(workflow, text_graph)
+    namespace = ''.join(workflow.title().split())
+    gwet_graph.addToGraph(g, namespace, connections)
+
+
+def createCentralizedRepoAndWorkers(central_repo_name, worker_names):
+    run("mkdir", central_repo_name)
+    with chDirContext(central_repo_name):
+        run("git", "init", "--bare")
+    for w in worker_names:
+        run("git", "clone", central_repo_name, w)
+    worker = worker_names[0]
+    with chDirContext(worker):
+        run("touch", "README")
+        run("git", "add", "README")
+        run("git", "commit", "README", "-m", "initial commit")
+        run("git", "push", "origin", "master")
+    for w in worker_names:
+        with chDirContext(w):
+            run("git", "pull")
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+def addToGraph(g, namespace, connections_text):
+    """Parse the connections_text and create a graph from it.
+
+    Uses the Solarized color scheme.
+
+    """
+    # XXX: this should be split up, we may want to create a standlone tool which
+    #      can map out arbitrary git repositories
+
+    lines = connections_text.splitlines()
+    for l in lines:
+        commit_info = l.split()
+        subject = commit_info[0]
+        name = namespace + "_" + commit_info[1]
+        parents = commit_info[2:]
+
+        label = ""
+        color = "#fdf6e3"
+
+        project_to_color = [
+            ["sez", "#b58900"],
+            ["painting", "#cb4b16"],
+            ["zoo", "#dc322f"],
+            ["wonderland", "#d33682"],
+            ["merge", "#eee8d5"],
+            ["initial", "#839496"],
+        ]
+        for pc in project_to_color:
+            if subject.startswith(pc[0]):
+                color = pc[1]
+
+        g.add_node(name, label=label, color=color)
+        for p in parents:
+            p_name = namespace + "_" + p
+            g.add_edge(name, p_name)
+import phlsys_fs
+import phlsys_subprocess
+
+run = phlsys_subprocess.run
+chDirContext = phlsys_fs.chDirContext
+
+
+def execute(workers, workflow):
+
+    jobsDirs = [(w.work(workflow), w.name) for w in workers]
+    next_jobsDirs = []
+
+    # complete all the jobs from the workers
+    while jobsDirs:
+        for (j, d) in jobsDirs:
+            with chDirContext(d):
+                try:
+                    j.next()
+                    next_jobsDirs.append((j, d))
+                except StopIteration:
+                    pass
+        jobsDirs = next_jobsDirs
+        next_jobsDirs = []
+def unindent(s):
+    s = s.strip()
+    lines = s.splitlines()
+    lines = [l.strip() for l in lines]
+    s = '\n'.join(lines)
+    return s
+
+
+def printContent(workflow, graph):
+    print "h2. " + unindent(workflow.title())
+    print unindent(workflow.description())
+    print
+    print "Each worker does:"
+    print "{code}"
+    print unindent(workflow.workflow())
+    print "{code}"
+    print "History:"
+    print "{code}"
+    print graph.strip()
+    print "{code}"
+    print
+#!/usr/bin/env python
+# encoding: utf-8
+
+import phlsys_subprocess
+
+run = phlsys_subprocess.run
+
+
+def commitAppendToFile(filename, text, message):
+    with open(filename, "a") as f:
+        f.write(text + "\n")
+    run("git", "add", filename)
+    run("git", "commit", filename, "-m", message)
+
+
+def commitAppendToProjectFile(name, project, item):
+    commitAppendToFile(
+        project,
+        item,
+        project + ": " + item + " (" + name + ")")
+
+
+class WorkflowBase(object):
+
+    def title(self):
+        raise Exception("should override this")
+
+    def description(self):
+        raise Exception("should override this")
+
+    def workflow(self):
+        raise Exception("should override this")
+
+    def start_project(self, name, project):
+        pass
+
+    def update(self, name, project):
+        pass
+
+    def do_item(self, name, project, item):
+        raise Exception("should override this")
+
+    def finish_project(self, name, project):
+        raise Exception("should override this")
+
+
+class RebaseMasterWorkflow(WorkflowBase):
+
+    def title(self):
+        return "Rebase on Master"
+
+    def description(self):
+        return "Commit on master, rebase often, push when done"
+
+    def workflow(self):
+        return """
+            .. commit some work ..
+            $ git pull --rebase
+            .. commit some work ..
+            $ git pull --rebase
+            $ git push origin master
+            """
+
+    def do_item(self, name, project, item):
+        commitAppendToProjectFile(name, project, item)
+
+    def finish_project(self, name, project):
+        run("git", "pull", "--rebase")
+        run("git", "push", "origin", "master")
+
+
+class RebaseTopicFfOnlyWorkflow(WorkflowBase):
+
+    def title(self):
+        return "Topic branches, rebase, ff-only merge"
+
+    def description(self):
+        return "Work on a topic branch, rebase often; ff-only merge to master"
+
+    def workflow(self):
+        return """
+            $ git checkout -b mywork
+            .. commit some work ..
+            $ git fetch
+            $ git rebase origin/master
+            .. commit some work ..
+            $ git fetch
+            $ git rebase origin/master
+
+            $ git checkout master
+            $ git merge origin/master --ff-only
+            $ git merge mywork --ff-only
+            $ git branch -d mywork
+            $ git push origin master
+            """
+
+    def start_project(self, name, project):
+        run("git", "checkout", "-b", project)
+
+    def update(self, name, project):
+        run("git", "fetch")
+        run("git", "rebase", "origin/master")
+
+    def do_item(self, name, project, item):
+        commitAppendToProjectFile(name, project, item)
+
+    def finish_project(self, name, project):
+        run("git", "fetch")
+        run("git", "rebase", "origin/master")
+        run("git", "checkout", "-B", "master", "origin/master")
+        run("git", "merge", project, "--ff-only")
+        run("git", "branch", "-d", project)
+        run("git", "push", "origin", "master")
+
+
+class SquashTopicWorkflow(WorkflowBase):
+
+    def title(self):
+        return "Topic branches, squash"
+
+    def description(self):
+        return "Work on a topic branch, squash work back to master when done"
+
+    def workflow(self):
+        return """
+            $ git checkout -b mywork
+            .. commit some work ..
+            .. commit some work ..
+
+            $ git fetch
+            $ git checkout master
+            $ git merge origin/master --ff-only
+            $ git merge mywork --squash
+            $ git commit
+            $ git branch -D mywork
+            $ git push origin master
+            """
+
+    def start_project(self, name, project):
+        run("git", "checkout", "-b", project)
+
+    def update(self, name, project):
+        pass
+
+    def do_item(self, name, project, item):
+        commitAppendToProjectFile(name, project, item)
+
+    def finish_project(self, name, project):
+        run("git", "fetch")
+        run("git", "checkout", "-B", "master", "origin/master")
+        run("git", "merge", project, "--squash")
+        run("git", "commit", "-m", project + " (" + name + ")")
+        run("git", "branch", "-D", project)
+        run("git", "push", "origin", "master")
+
+
+class RebaseTopicNoFfWorkflow(WorkflowBase):
+
+    def title(self):
+        return "Topic branches, rebase, no-ff merge"
+
+    def description(self):
+        return "Work on a topic branch, rebase often; no-ff merge to master"
+
+    def workflow(self):
+        return """
+            $ git checkout -b mywork
+            .. commit some work ..
+            $ git fetch
+            $ git rebase origin/master
+            .. commit some work ..
+            $ git fetch
+            $ git rebase origin/master
+
+            $ git checkout master
+            $ git merge origin/master --ff-only
+            $ git merge mywork --no-ff
+            $ git branch -d mywork
+            $ git push origin master
+            """
+
+    def start_project(self, name, project):
+        run("git", "checkout", "-b", project)
+
+    def update(self, name, project):
+        run("git", "fetch")
+        run("git", "rebase", "origin/master")
+
+    def do_item(self, name, project, item):
+        commitAppendToProjectFile(name, project, item)
+
+    def finish_project(self, name, project):
+        run("git", "fetch")
+        run("git", "rebase", "origin/master")
+        run("git", "checkout", "-B", "master", "origin/master")
+        run("git", "merge", project, "--no-ff")
+        run("git", "branch", "-d", project)
+        run("git", "push", "origin", "master")
+
+
+class MergeTopicWorkflow(WorkflowBase):
+
+    def title(self):
+        return "Topic branches, merge"
+
+    def description(self):
+        return "Work on a topic branch, merge back to master"
+
+    def workflow(self):
+        return """
+            $ git checkout -b mywork
+            .. commit some work ..
+            .. commit some work ..
+
+            $ git fetch
+            $ git checkout master
+            $ git merge origin/master
+            $ git merge mywork
+            $ git branch -d mywork
+            $ git push origin master
+            """
+
+    def start_project(self, name, project):
+        run("git", "checkout", "-b", project)
+
+    def update(self, name, project):
+        run("git", "fetch")
+        run("git", "rebase", "origin/master")
+
+    def do_item(self, name, project, item):
+        commitAppendToProjectFile(name, project, item)
+
+    def finish_project(self, name, project):
+        run("git", "fetch")
+        run("git", "checkout", "-B", "master", "origin/master")
+        run("git", "merge", project)
+        run("git", "branch", "-d", project)
+        run("git", "push", "origin", "master")
+
+
+class MergeTopicCatchupWorkflow(WorkflowBase):
+
+    def title(self):
+        return "Topic branches, merge catchup"
+
+    def description(self):
+        return "Work on a topic branch, merge catch-up, merge back to master"
+
+    def workflow(self):
+        return """
+            $ git checkout -b mywork
+            .. commit some work ..
+            $ git fetch
+            $ git merge origin/master
+            .. commit some work ..
+            $ git fetch
+            $ git merge origin/master
+
+            $ git checkout master
+            $ git merge origin/master
+            $ git merge mywork
+            $ git branch -d mywork
+            $ git push origin master
+            """
+
+    def start_project(self, name, project):
+        run("git", "checkout", "-b", project)
+
+    def update(self, name, project):
+        run("git", "fetch")
+        run("git", "rebase", "origin/master")
+
+    def do_item(self, name, project, item):
+        commitAppendToProjectFile(name, project, item)
+        run("git", "fetch")
+        run("git", "merge", "origin/master")
+
+    def finish_project(self, name, project):
+        run("git", "fetch")
+        run("git", "checkout", "-B", "master", "origin/master")
+        run("git", "merge", project)
+        run("git", "branch", "-d", project)
+        run("git", "push", "origin", "master")
+
+
+class SvnWorkflow(WorkflowBase):
+
+    def title(self):
+        return "The SVN workflow"
+
+    def description(self):
+        return "Work on master, rebase and push every individual commit"
+
+    def workflow(self):
+        return """
+            .. commit some work ..
+            $ git pull --rebase
+            $ git push origin master
+            .. commit some work ..
+            $ git pull --rebase
+            $ git push origin master
+            """
+
+    def do_item(self, name, project, item):
+        commitAppendToProjectFile(name, project, item)
+        run("git", "pull", "--rebase")
+        run("git", "push", "origin", "master")
+
+    def finish_project(self, name, project):
+        run("git", "pull", "--rebase")
+        run("git", "push", "origin", "master")
+
+
+class SvnPullWorkflow(WorkflowBase):
+
+    def title(self):
+        return "The SVN workflow, merge-o-geddon"
+
+    def description(self):
+        return "Work on master, pull and push every individual commit"
+
+    def workflow(self):
+        return """
+            .. commit some work ..
+            $ git pull
+            $ git push origin master
+            .. commit some work ..
+            $ git pull
+            $ git push origin master
+            """
+
+    def do_item(self, name, project, item):
+        commitAppendToProjectFile(name, project, item)
+        run("git", "pull")
+        run("git", "push", "origin", "master")
+
+    def finish_project(self, name, project):
+        run("git", "pull")
+        run("git", "push", "origin", "master")
+#!/usr/bin/env python
+# encoding: utf-8
+"""Helpers for interacting with the filesystem."""
+
+from contextlib import contextmanager
+import os
+
+
+#TODO: write a docstring with doctests when we have a tempdir helper
+@contextmanager
+def chDirContext(newDir):
+    savedPath = os.getcwd()
+    os.chdir(newDir)
+    try:
+        yield
+    finally:
+        os.chdir(savedPath)
+
+#------------------------------------------------------------------------------
+# Copyright (C) 2012 Bloomberg L.P.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to
+# deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
+#------------------------------- END-OF-FILE ----------------------------------
+#!/usr/bin/env python
+# encoding: utf-8
+
+"""Interact with other programs using command-line semantics."""
+
+import collections
+import doctest
+import subprocess
+import sys
+
+RunResult = collections.namedtuple(
+    'phlsys_subprocess__RunResult',
+    ['stdout', 'stderr'])
+
+
+#def run(*args, workingDir=None): <-- supported in Python 3, use kwargs for now
+def run(*args, **kwargs):
+    """Execute the command described by args, return a 'RunResult'.
+
+    This is a convenience function which wraps the functionality of
+    subprocess.Popen() in a manner more compatible for our uses here.
+
+    Raise a 'subprocess.CalledProcessError' if the return code is not equal to
+    zero; also echo extra information to stderr.
+
+    Usage examples:
+        Echoing 'hello stdout' to stdout:
+        >>> run('echo', 'hello stdout')
+        phlsys_subprocess__RunResult(stdout='hello stdout\\n', stderr='')
+
+        Passing a list on stdin and sorting in reverse order:
+        >>> run('sort', '-r', stdin='1\\n2\\n3')
+        phlsys_subprocess__RunResult(stdout='3\\n2\\n1\\n', stderr='')
+
+    :*args: a tuple of strings corresponding to command-line arguments
+    :**kwargs: keyword arguments corresponding to the special
+    :returns: a RunResult corresponding to the output of the command
+
+    """
+    # TODO: allow customization of non-zero return value behaviour,
+    #       maybe not all clients will want to raise an exception in this case.
+    #       if we do allow this customization then we'll also want to
+    #       return the return value via the RunResult
+    workingDir = kwargs.pop("workingDir", None)
+    stdin = kwargs.pop("stdin", None)
+    assert not kwargs
+    cmd = args
+    p = subprocess.Popen(
+        cmd,
+        cwd=workingDir,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE)
+    out, err = p.communicate(input=stdin)
+    if (p.returncode != 0):
+        sys.stderr.write("cmd: " + str(cmd))
+        if workingDir:
+            sys.stderr.write("workingDir: " + workingDir)
+        if stdin:
+            sys.stderr.write("stdin: " + stdin)
+        sys.stderr.write("out:" + out)
+        sys.stderr.write("err:" + err)
+        raise subprocess.CalledProcessError(p.returncode, cmd, out)
+    return RunResult(stdout=out, stderr=err)
+
+
+# XXX: doesn't handle quotes or backticks
+def runCommands(*commands):
+    """Execute the command-line strings descripted by '*commands'.
+
+    This is a convenience function which wraps the functionality of
+    run() in a manner more compatible for test cases.
+
+    Raise a 'subprocess.CalledProcessError' if the return code is not equal to
+    zero; also echo extra information to stderr.
+
+    Note that behaviour is undefined in the presense of quotes and backticks.
+
+    Usage examples:
+        Echoing 'hello stdout' to stdout:
+        >>> runCommands('echo hello stdout')
+
+        Echoing 'hello stdout' 'goodbye stdout' to stdout:
+        >>> runCommands('echo hello stdout', 'echo goodbye stdout')
+
+    :*commands: a list of strings corresponding to command-lines
+    :returns: None
+
+    """
+    assert not any(bad in c for c in commands for bad in ("'", '"', '`'))
+
+    for c in commands:
+        run(*c.split())
+
+
+if __name__ == "__main__":
+    doctest.testmod()
+
+#------------------------------------------------------------------------------
+# Copyright (C) 2012 Bloomberg L.P.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to
+# deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
+#------------------------------- END-OF-FILE ----------------------------------
