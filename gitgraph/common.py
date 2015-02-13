@@ -146,7 +146,8 @@ class GitRepo():
         :returns: list of strings representing the lines from git
 
         """
-        return '\n'.join(list(self.yield_stdout((args))))
+        command = ('git',) + args
+        return ''.join(list(self.yield_stdout(*command)))
 
 
 def git_merge_base(repo, *commits):
