@@ -6,13 +6,7 @@
 from contextlib import contextmanager
 import collections
 import doctest
-import gwet_graph
-import gwet_simulate
-import gwet_teamcontent
-import gwet_workflow
 import os
-import phlsys_fs
-import phlsys_subprocess
 import subprocess
 import sys
 
