@@ -11,7 +11,7 @@ import sys
 
 # networkx must be installed before use
 #   $ sudo apt-get install python-networkx
-import networkx as nx
+import networkx
 
 # important to read - the graphml won't render nicely by default:
 # http://thirld.com/blog/2012/01/31/making-yed-import-labels-from-graphml-files/
@@ -65,7 +65,7 @@ def main():
 
     # we'll be building a graph of all the commits on master at the end
     # of each simulation
-    g = nx.DiGraph()
+    g = networkx.DiGraph()
 
     # run all the simulations
     for workflow in workflows:
@@ -74,7 +74,7 @@ def main():
     # write the graph in the 'graphml' format, this is useful because the
     # 'yEd' editor will allow us to load the graph and manipulate it into a
     # form that we are happy with
-    graphml = '\n'.join(nx.generate_graphml(g))
+    graphml = '\n'.join(networkx.generate_graphml(g))
     with open("all.graphml", "w") as f:
         f.write(graphml)
 
