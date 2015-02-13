@@ -218,31 +218,7 @@ def commitAppendToProjectFile(name, project, item):
         project + ": " + item + " (" + name + ")")
 
 
-class WorkflowBase(object):
-
-    def title(self):
-        raise Exception("should override this")
-
-    def description(self):
-        raise Exception("should override this")
-
-    def workflow(self):
-        raise Exception("should override this")
-
-    def start_project(self, name, project):
-        pass
-
-    def update(self, name, project):
-        pass
-
-    def do_item(self, name, project, item):
-        raise Exception("should override this")
-
-    def finish_project(self, name, project):
-        raise Exception("should override this")
-
-
-class RebaseMasterWorkflow(WorkflowBase):
+class RebaseMasterWorkflow():
 
     def title(self):
         return "Rebase on Master"
@@ -259,6 +235,12 @@ class RebaseMasterWorkflow(WorkflowBase):
             $ git push origin master
             """
 
+    def start_project(self, name, project):
+        pass
+
+    def update(self, name, project):
+        pass
+
     def do_item(self, name, project, item):
         commitAppendToProjectFile(name, project, item)
 
@@ -267,7 +249,7 @@ class RebaseMasterWorkflow(WorkflowBase):
         run("git", "push", "origin", "master")
 
 
-class RebaseTopicFfOnlyWorkflow(WorkflowBase):
+class RebaseTopicFfOnlyWorkflow():
 
     def title(self):
         return "Topic branches, rebase, ff-only merge"
@@ -311,7 +293,7 @@ class RebaseTopicFfOnlyWorkflow(WorkflowBase):
         run("git", "push", "origin", "master")
 
 
-class SquashTopicWorkflow(WorkflowBase):
+class SquashTopicWorkflow():
 
     def title(self):
         return "Topic branches, squash"
@@ -352,7 +334,7 @@ class SquashTopicWorkflow(WorkflowBase):
         run("git", "push", "origin", "master")
 
 
-class RebaseTopicNoFfWorkflow(WorkflowBase):
+class RebaseTopicNoFfWorkflow():
 
     def title(self):
         return "Topic branches, rebase, no-ff merge"
@@ -396,7 +378,7 @@ class RebaseTopicNoFfWorkflow(WorkflowBase):
         run("git", "push", "origin", "master")
 
 
-class MergeTopicWorkflow(WorkflowBase):
+class MergeTopicWorkflow():
 
     def title(self):
         return "Topic branches, merge"
@@ -436,7 +418,7 @@ class MergeTopicWorkflow(WorkflowBase):
         run("git", "push", "origin", "master")
 
 
-class MergeTopicCatchupWorkflow(WorkflowBase):
+class MergeTopicCatchupWorkflow():
 
     def title(self):
         return "Topic branches, merge catchup"
@@ -481,7 +463,7 @@ class MergeTopicCatchupWorkflow(WorkflowBase):
         run("git", "push", "origin", "master")
 
 
-class SvnWorkflow(WorkflowBase):
+class SvnWorkflow():
 
     def title(self):
         return "The SVN workflow"
@@ -499,6 +481,12 @@ class SvnWorkflow(WorkflowBase):
             $ git push origin master
             """
 
+    def start_project(self, name, project):
+        pass
+
+    def update(self, name, project):
+        pass
+
     def do_item(self, name, project, item):
         commitAppendToProjectFile(name, project, item)
         run("git", "pull", "--rebase")
@@ -509,7 +497,7 @@ class SvnWorkflow(WorkflowBase):
         run("git", "push", "origin", "master")
 
 
-class SvnPullWorkflow(WorkflowBase):
+class SvnPullWorkflow():
 
     def title(self):
         return "The SVN workflow, merge-o-geddon"
@@ -526,6 +514,12 @@ class SvnPullWorkflow(WorkflowBase):
             $ git pull
             $ git push origin master
             """
+
+    def start_project(self, name, project):
+        pass
+
+    def update(self, name, project):
+        pass
 
     def do_item(self, name, project, item):
         commitAppendToProjectFile(name, project, item)
