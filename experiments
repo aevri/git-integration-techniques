@@ -121,8 +121,6 @@ def createCentralizedRepoAndWorkers(central_repo_name, worker_names):
             run("git", "pull")
 
 
-if __name__ == "__main__":
-    sys.exit(main())
 def addToGraph(g, namespace, connections_text):
     """Parse the connections_text and create a graph from it.
 
@@ -620,4 +618,4 @@ def runCommands(*commands):
 
 
 if __name__ == "__main__":
-    doctest.testmod()
+    sys.exit(main())
