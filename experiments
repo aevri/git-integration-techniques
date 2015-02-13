@@ -1,3 +1,17 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+from contextlib import contextmanager
+import collections
+import os
+import subprocess
+import sys
+
+RunResult = collections.namedtuple(
+    'phlsys_subprocess__RunResult',
+    ['stdout', 'stderr'])
+
+
 def addToGraph(g, namespace, connections_text):
     """Parse the connections_text and create a graph from it.
 
@@ -33,12 +47,6 @@ def addToGraph(g, namespace, connections_text):
         for p in parents:
             p_name = namespace + "_" + p
             g.add_edge(name, p_name)
-import phlsys_fs
-import phlsys_subprocess
-
-run = phlsys_subprocess.run
-chDirContext = phlsys_fs.chDirContext
-
 
 def execute(workers, workflow):
 
@@ -56,6 +64,7 @@ def execute(workers, workflow):
                     pass
         jobsDirs = next_jobsDirs
         next_jobsDirs = []
+
 def unindent(s):
     s = s.strip()
     lines = s.splitlines()
@@ -77,13 +86,6 @@ def printContent(workflow, graph):
     print graph.strip()
     print "{code}"
     print
-#!/usr/bin/env python
-# encoding: utf-8
-
-import phlsys_subprocess
-
-run = phlsys_subprocess.run
-
 
 def commitAppendToFile(filename, text, message):
     with open(filename, "a") as f:
@@ -416,12 +418,6 @@ class SvnPullWorkflow(WorkflowBase):
     def finish_project(self, name, project):
         run("git", "pull")
         run("git", "push", "origin", "master")
-#!/usr/bin/env python
-# encoding: utf-8
-"""Helpers for interacting with the filesystem."""
-
-from contextlib import contextmanager
-import os
 
 
 #TODO: write a docstring with doctests when we have a tempdir helper
@@ -433,42 +429,6 @@ def chDirContext(newDir):
         yield
     finally:
         os.chdir(savedPath)
-
-#------------------------------------------------------------------------------
-# Copyright (C) 2012 Bloomberg L.P.
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to
-# deal in the Software without restriction, including without limitation the
-# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-# sell copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-# IN THE SOFTWARE.
-#------------------------------- END-OF-FILE ----------------------------------
-#!/usr/bin/env python
-# encoding: utf-8
-
-"""Interact with other programs using command-line semantics."""
-
-import collections
-import doctest
-import subprocess
-import sys
-
-RunResult = collections.namedtuple(
-    'phlsys_subprocess__RunResult',
-    ['stdout', 'stderr'])
-
 
 #def run(*args, workingDir=None): <-- supported in Python 3, use kwargs for now
 def run(*args, **kwargs):
@@ -550,30 +510,6 @@ def runCommands(*commands):
         run(*c.split())
 
 
-if __name__ == "__main__":
-    doctest.testmod()
-
-#------------------------------------------------------------------------------
-# Copyright (C) 2012 Bloomberg L.P.
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to
-# deal in the Software without restriction, including without limitation the
-# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-# sell copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-# IN THE SOFTWARE.
-#------------------------------- END-OF-FILE ----------------------------------
 def addToGraph(g, namespace, connections_text):
     """Parse the connections_text and create a graph from it.
 
@@ -609,12 +545,6 @@ def addToGraph(g, namespace, connections_text):
         for p in parents:
             p_name = namespace + "_" + p
             g.add_edge(name, p_name)
-import phlsys_fs
-import phlsys_subprocess
-
-run = phlsys_subprocess.run
-chDirContext = phlsys_fs.chDirContext
-
 
 def execute(workers, workflow):
 
@@ -653,13 +583,6 @@ def printContent(workflow, graph):
     print graph.strip()
     print "{code}"
     print
-#!/usr/bin/env python
-# encoding: utf-8
-
-import phlsys_subprocess
-
-run = phlsys_subprocess.run
-
 
 def commitAppendToFile(filename, text, message):
     with open(filename, "a") as f:
@@ -992,13 +915,6 @@ class SvnPullWorkflow(WorkflowBase):
     def finish_project(self, name, project):
         run("git", "pull")
         run("git", "push", "origin", "master")
-#!/usr/bin/env python
-# encoding: utf-8
-"""Helpers for interacting with the filesystem."""
-
-from contextlib import contextmanager
-import os
-
 
 #TODO: write a docstring with doctests when we have a tempdir helper
 @contextmanager
@@ -1009,41 +925,6 @@ def chDirContext(newDir):
         yield
     finally:
         os.chdir(savedPath)
-
-#------------------------------------------------------------------------------
-# Copyright (C) 2012 Bloomberg L.P.
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to
-# deal in the Software without restriction, including without limitation the
-# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-# sell copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-# IN THE SOFTWARE.
-#------------------------------- END-OF-FILE ----------------------------------
-#!/usr/bin/env python
-# encoding: utf-8
-
-"""Interact with other programs using command-line semantics."""
-
-import collections
-import doctest
-import subprocess
-import sys
-
-RunResult = collections.namedtuple(
-    'phlsys_subprocess__RunResult',
-    ['stdout', 'stderr'])
 
 
 #def run(*args, workingDir=None): <-- supported in Python 3, use kwargs for now
@@ -1124,10 +1005,6 @@ def runCommands(*commands):
 
     for c in commands:
         run(*c.split())
-
-
-if __name__ == "__main__":
-    doctest.testmod()
 
 #------------------------------------------------------------------------------
 # Copyright (C) 2012 Bloomberg L.P.
