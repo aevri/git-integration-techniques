@@ -54,14 +54,14 @@ def main():
     # the workers will participate in all of these workflows
     workers = [alice, bob, charley, dorian]
     workflows = [
-        gwet_workflow.RebaseMasterWorkflow(),
-        gwet_workflow.RebaseTopicFfOnlyWorkflow(),
-        gwet_workflow.RebaseTopicNoFfWorkflow(),
-        gwet_workflow.SquashTopicWorkflow(),
-        gwet_workflow.MergeTopicWorkflow(),
-        gwet_workflow.MergeTopicCatchupWorkflow(),
-        gwet_workflow.SvnWorkflow(),
-        gwet_workflow.SvnPullWorkflow()
+        RebaseMasterWorkflow(),
+        RebaseTopicFfOnlyWorkflow(),
+        RebaseTopicNoFfWorkflow(),
+        SquashTopicWorkflow(),
+        MergeTopicWorkflow(),
+        MergeTopicCatchupWorkflow(),
+        SvnWorkflow(),
+        SvnPullWorkflow()
     ]
 
     # we'll be building a graph of all the commits on master at the end
@@ -90,7 +90,7 @@ def doWorkflow(g, workflow, workers):
         createCentralizedRepoAndWorkers(
             central_repo_name,
             [w.name for w in workers])
-        gwet_simulate.execute(workers, workflow)
+        execute(workers, workflow)
 
         # graph the result on master
         with chDirContext(central_repo_name):
@@ -99,9 +99,9 @@ def doWorkflow(g, workflow, workers):
 
     run("rm", "-rf", tempdir_name)
 
-    gwet_teamcontent.printContent(workflow, text_graph)
+    printContent(workflow, text_graph)
     namespace = ''.join(workflow.title().split())
-    gwet_graph.addToGraph(g, namespace, connections)
+    addToGraph(g, namespace, connections)
 
 
 def createCentralizedRepoAndWorkers(central_repo_name, worker_names):
