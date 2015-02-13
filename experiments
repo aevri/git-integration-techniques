@@ -3,22 +3,18 @@
 
 """Interact with other programs using command-line semantics."""
 
+from contextlib import contextmanager
 import collections
 import doctest
-import subprocess
-import sys
-from contextlib import contextmanager
-import os
-import phlsys_fs
-import phlsys_subprocess
 import gwet_graph
 import gwet_simulate
 import gwet_teamcontent
 import gwet_workflow
-import phlsys_subprocess
-import sys
+import os
 import phlsys_fs
 import phlsys_subprocess
+import subprocess
+import sys
 
 run = phlsys_subprocess.run
 chDirContext = phlsys_fs.chDirContext
