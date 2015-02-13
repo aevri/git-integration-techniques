@@ -591,7 +591,7 @@ def run(*args, **kwargs):
         sys.stderr.write("out:" + out)
         sys.stderr.write("err:" + err)
         raise subprocess.CalledProcessError(p.returncode, cmd, out)
-    return RunResult(stdout=out, stderr=err)
+    return RunResult(stdout=str(out), stderr=str(err))
 
 
 # XXX: doesn't handle quotes or backticks
