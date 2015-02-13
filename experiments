@@ -101,7 +101,7 @@ def doWorkflow(g, workflow, workers):
 
     run("rm", "-rf", tempdir_name)
 
-    printContent(workflow, text_graph)
+    print(text_graph)
     namespace = ''.join(workflow.title().split())
     addToGraph(g, namespace, connections)
 
@@ -202,21 +202,6 @@ def unindent(s):
     lines = [l.strip() for l in lines]
     s = '\n'.join(lines)
     return s
-
-
-def printContent(workflow, graph):
-    print("h2. " + unindent(workflow.title()))
-    print(unindent(workflow.description()))
-    print()
-    print("Each worker does:")
-    print("{code}")
-    print(unindent(workflow.workflow()))
-    print("{code}")
-    print("History:")
-    print("{code}")
-    print(graph.strip())
-    print("{code}")
-    print()
 
 
 def commitAppendToFile(filename, text, message):
