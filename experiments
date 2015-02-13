@@ -1,7 +1,34 @@
 #!/usr/bin/env python
 # encoding: utf-8
+#!/usr/bin/env python
+# encoding: utf-8
+#!/usr/bin/env python
+# encoding: utf-8
+#!/usr/bin/env python
+# encoding: utf-8
 
+"""Interact with other programs using command-line semantics."""
+
+import collections
+import doctest
+import subprocess
 import sys
+from contextlib import contextmanager
+import os
+import phlsys_fs
+import phlsys_subprocess
+import gwet_graph
+import gwet_simulate
+import gwet_teamcontent
+import gwet_workflow
+import phlsys_subprocess
+import sys
+import phlsys_fs
+import phlsys_subprocess
+
+run = phlsys_subprocess.run
+chDirContext = phlsys_fs.chDirContext
+
 
 # networkx must be installed before use
 #   $ sudo apt-get install python-networkx
@@ -10,16 +37,14 @@ import networkx as nx
 # important to read - the graphml won't render nicely by default:
 # http://thirld.com/blog/2012/01/31/making-yed-import-labels-from-graphml-files/
 
-import phlsys_fs
-import phlsys_subprocess
-
-import gwet_graph
-import gwet_simulate
-import gwet_teamcontent
-import gwet_workflow
-
+run = phlsys_subprocess.run
 run = phlsys_subprocess.run
 chDirContext = phlsys_fs.chDirContext
+
+RunResult = collections.namedtuple(
+    'phlsys_subprocess__RunResult',
+    ['stdout', 'stderr'])
+"""Helpers for interacting with the filesystem."""
 
 
 class Worker():
@@ -157,12 +182,6 @@ def addToGraph(g, namespace, connections_text):
         for p in parents:
             p_name = namespace + "_" + p
             g.add_edge(name, p_name)
-import phlsys_fs
-import phlsys_subprocess
-
-run = phlsys_subprocess.run
-chDirContext = phlsys_fs.chDirContext
-
 
 def execute(workers, workflow):
 
@@ -201,13 +220,6 @@ def printContent(workflow, graph):
     print graph.strip()
     print "{code}"
     print
-#!/usr/bin/env python
-# encoding: utf-8
-
-import phlsys_subprocess
-
-run = phlsys_subprocess.run
-
 
 def commitAppendToFile(filename, text, message):
     with open(filename, "a") as f:
@@ -540,14 +552,6 @@ class SvnPullWorkflow(WorkflowBase):
     def finish_project(self, name, project):
         run("git", "pull")
         run("git", "push", "origin", "master")
-#!/usr/bin/env python
-# encoding: utf-8
-"""Helpers for interacting with the filesystem."""
-
-from contextlib import contextmanager
-import os
-
-
 #TODO: write a docstring with doctests when we have a tempdir helper
 @contextmanager
 def chDirContext(newDir):
@@ -579,19 +583,6 @@ def chDirContext(newDir):
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #------------------------------- END-OF-FILE ----------------------------------
-#!/usr/bin/env python
-# encoding: utf-8
-
-"""Interact with other programs using command-line semantics."""
-
-import collections
-import doctest
-import subprocess
-import sys
-
-RunResult = collections.namedtuple(
-    'phlsys_subprocess__RunResult',
-    ['stdout', 'stderr'])
 
 
 #def run(*args, workingDir=None): <-- supported in Python 3, use kwargs for now
