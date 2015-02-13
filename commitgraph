@@ -38,7 +38,8 @@ def main():
 
     args = parser.parse_args()
 
-    commits = gitgraph.common.yield_commits(args.input, args.range)
+    repo = gitgraph.common.GitRepo(args.input)
+    commits = gitgraph.common.yield_commits(repo, args.range)
     graph = gitgraph.common.make_graph(commits)
     gitgraph.common.write_graphml(graph, args.output)
     print("wrote:", args.output)

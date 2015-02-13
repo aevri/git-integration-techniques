@@ -84,21 +84,21 @@ def make_graph(commits):
     return graph
 
 
-def yield_commits(repo_dir, range_=None):
+def yield_commits(repo, range_=None):
     git_args = ["git", "log", "--format=%f:%h:%p:%d"]
     if range_:
         git_args.append(range_)
     else:
         git_args.append("--all")
 
-    for line in yield_stdout(git_args, cwd=repo_dir):
+    for line in repo.yield_stdout(*git_args):
         commit_info = line.split(':')
         subject = commit_info[0]
         name = commit_info[1]
         parents = commit_info[2].split()
         decorations = commit_info[3].strip().strip('()').split()
         if len(parents) > 1:
-            merge_base = git_merge_base(repo_dir, *parents)
+            merge_base = git_merge_base(repo, *parents)
         elif len(parents) == 1:
             merge_base = parents[0]
         else:
@@ -106,23 +106,48 @@ def yield_commits(repo_dir, range_=None):
         yield subject, name, parents, decorations, merge_base
 
 
-def git_merge_base(repo_dir, *commits):
-    return call_git(repo_dir, 'merge-base', *commits)
+class GitRepo():
+
+    """A callable wrapper for a git repository."""
+
+    def __init__(self, working_copy_path):
+        """Init a new GitRepo, locked to the specified 'working_copy_path'.
+
+        :working_copy_path: string path to the working path repository
+
+        """
+        self._working_copy_path = working_copy_path
+
+    def yield_stdout(self, *args):
+        """Yield the lines of output from invoking git with '*args'.
+
+        Note that you should iterate through all the lines of output or the
+        process may not finish.
+
+        :*args: a list of arguments to supply to git
+        :returns: list of strings representing the lines from git
+
+        """
+        process = subprocess.Popen(
+            args,
+            stdout=subprocess.PIPE,
+            bufsize=1,
+            universal_newlines=True,
+            cwd=self._working_copy_path)
+
+        with process:
+            for line in process.stdout:
+                yield line
+
+    def __call__(self, *args):
+        """Return the lines of output from invoking git with '*args'.
+
+        :*args: a list of arguments to supply to git
+        :returns: list of strings representing the lines from git
+
+        """
+        return '\n'.join(list(self.yield_stdout((args))))
 
 
-def call_git(cwd, *args):
-    return '\n'.join(list(yield_stdout(('git', ) + args, cwd)))
-
-
-def yield_stdout(args, cwd):
-
-    process = subprocess.Popen(
-        args,
-        stdout=subprocess.PIPE,
-        bufsize=1,
-        universal_newlines=True,
-        cwd=cwd)
-
-    with process:
-        for line in process.stdout:
-            yield line
+def git_merge_base(repo, *commits):
+    return repo('merge-base', *commits)
