@@ -1,0 +1,39 @@
+- Hello
+- Logdog
+- Houses
+    - Fixup
+    - Squash
+    - Separate changes
+- Topic-merge
+    - Introduce 4 workers
+    - Are these fixup commits?
+    - Are these commits dependent?
+    - These commits are not dependent
+- Topic-catchup-merge
+    - Merge to reconcile conflicts early, is rebasing an option?
+    - Merge from fear of falling behind, this is what fear looks like
+- Master-merge-o-geddon
+    - Work on 'master'
+    - SVN-like, pull+push
+    - What SVN with merging might look like
+- Master-rebase
+    - Work on 'master'
+    - SVN-like, pull+push
+    - What SVN ported to Git looks like
+    - Minimal merge conflicts
+- Topic-rebase-noff
+    - Preserve branchy-ness
+    - Lose independence
+    - No catchup merges
+- Topic-rebase-ffonly
+    - Lose branchy-ness
+    - Lose independence
+    - No catchup merges
+- Topic-squash
+    - Lose branchy-ness
+    - Lose independence
+    - No catchup merges
+    - Lose history
+- All together
+
+? Technique: Branch from topic, rewrite history, merge back to defunct topic
