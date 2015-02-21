@@ -90,7 +90,7 @@ different, let us see how.
 - Fact 2: Each of the commits in the top history is independent, the commits
   could be re-ordered without merge conflicts.
 
-Cherry-pick, revert, bisect
+Cherry-pick, revert, bisect, review.
 
 Topic merge
 -----------
