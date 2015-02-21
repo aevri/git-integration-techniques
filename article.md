@@ -81,6 +81,17 @@ Remodelling the house
 
 <<house remodelling diagram>>
 
+This example looks similar to the first but I assure you it is totally
+different, let us see how.
+
+- Fact 1: Each of the commits in the top history is a valid house. These
+  represent useful, separate changes. All of them are buildable and testable.
+
+- Fact 2: Each of the commits in the top history is independent, the commits
+  could be re-ordered without merge conflicts.
+
+Cherry-pick, revert, bisect
+
 Topic merge
 -----------
 
