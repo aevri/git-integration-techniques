@@ -36,36 +36,45 @@ make some contentious arguments!
   previous commit, this means that each commit represented the best current
   effort at some point in time.
 
-- Fact 2: No-one wants to live in a half-painted or over-painted house. Please
-  think of these work-in-progress (WIP) commits as untestable and breaking the
-  build.
-
-- Fact 3: If you wanted to cherry-pick or revert the whole painting effort in
-  the top path, you would have to do so with all of the commits. On the bottom
-  path there is only one, self-contained commit to deal with.
-
-- Fact 4: When bisecting over history later, you would need to give the WIP
-  commits special treatment because they are untestable. The bottom history
-  needs no special treatment.
-
-- Fact 5: If you make WIP commits and push them somewhere else as you progress,
+- Fact 2: If you make WIP commits and push them somewhere else as you progress,
   your work will be more robust to mice running across your keyboard and the
   cats that dash after them.
 
-- Fact 6: Non-fast-forward pushes to refs that others share with you will
-  complicate the work of those others. Not quite as much as it used to.
+- Fact 3: No-one wants to live in a half-painted or over-painted house. Please
+  think of these work-in-progress (WIP) commits as untestable and breaking the
+  build.
 
-- Fact 7: You can convert from the top history to an equivalent of the bottom
+- Fact 4: If you wanted to cherry-pick or revert the whole painting effort in
+  the top path, you would have to do so with all of the commits. On the bottom
+  path there is only one, self-contained commit to deal with.
+
+- Fact 5: When bisecting over history later, you would need to give the WIP
+  commits special treatment because they are untestable. The bottom history
+  needs no special treatment.
+
+- Fact 6: You can convert from the top history to an equivalent of the bottom
   history with just a bit of extra work. This work becomes easy with
-  experience.
+  practice.
 
-Green-to-green.
+- Fact 7: Non-fast-forward pushes to refs that others share with you will
+  complicate the work of those others. Perhaps not quite as much as it used to.
 
-- Fixup
+So now we have established some facts, what can we do?
 
-- Squash
+From (1, 2) we can see that the top history is actually pretty appealing
+whilst we are working towards a goal. Working that way frees us from thinking
+too hard about leaving tidy commits behind as we try things out to move closer
+to the goal.
 
-- Separate changes
+From (3, 4, 5) we see that the joy of the top history at authoring
+time turns a little sour. After the goal of painting the house is achieved,
+we may wish we had got it done in one commit.
+
+From (6, 7) we see that we can have the best of both worlds. To avoid the
+pitfall of (7) we can work on a personal 'topic branch' until we are ready to
+clean up our history and push it somewhere we share with others.
+
+TODO: Green-to-green?
 
 Remodelling the house
 ---------------------
