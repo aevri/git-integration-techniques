@@ -17,31 +17,43 @@ Painting the house
 
 <<house painting diagram>>
 
-Here we have a git commit graph, with each commit represented as a picture of a
-house. Note that the arrows point back at the parent commits, as this is git.
-You will notice that there are two histories depicted, both are painting the
-original house a new color. In the top history there are a number of
-intermediate 'fixup' commits. The bottom history paints the house in one
+Here we have a git commit graph, with each commit represented as an impressive
+drawing of a house. Note that the arrows point back at the parent commits, as
+this is git. You will notice that there are two histories depicted, both are
+painting the original house a new color. In the top history there are a number
+of intermediate 'fixup' commits. The bottom history paints the house in one
 commit.
 
-If we re-imagined the task of painting the house as a coding task, it would be
-comparable to renaming a popular function. A naive search and replace might
-just replace too much, so at least manual checking would probably be in order.
-There could be many call-sites to visit, so you might want to make checkpoints
-along the way.
+If we re-imagine the task of painting the house as a coding task, it is
+comparable to renaming a function. A naive search and replace might make
+mistakes, so at least manual checking would probably be in order.  There could
+be many call sites to visit, so you might want to save your work along the way.
 
-Which of the histories is 'better'? Let us amass the facts and then compare the
-arguments!
+Which of the histories is 'better'? Let us first state some impartial facts,
+and then make some contentious arguments!
 
-Fact: 
+- Fact 1: Each of the commits along the top take us closer to the goal than the
+  previous commit, this means that each commit represented the best current
+  effort at some point in time.
+
+- Fact 2: No-one wants to live in a half-painted or over-painted house. Think
+  of these work-in-progress (WIP) commits as untestable and breaking the build.
+
+- Fact 3: If you wanted to cherry-pick or revert the whole painting effort in
+  the top path, you would have to do so with all of the commits. On the bottom
+  path there is only one, self-contained commit to deal with.
+
+- Fact 4: When bisecting over history later, you would need to give the WIP
+  commits special treatment because they are untestable. The bottom history
+  needs no special treatment.
+
+- Fact 5: If you make WIP commits and push them somewhere else as you progress,
+  your work will be more robust to mice running across your keyboard and the
+  cats that dash after them.
+
+- Fact 6: 
 
 Green-to-green.
-
-Bisect.
-
-Cherry-pick.
-
-Revert.
 
 - Fixup
 
