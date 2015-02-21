@@ -29,15 +29,16 @@ comparable to renaming a function. A naive search and replace might make
 mistakes, so at least manual checking would probably be in order.  There could
 be many call sites to visit, so you might want to save your work along the way.
 
-Which of the histories is 'better'? Let us first state some impartial facts,
-and then make some contentious arguments!
+Which of the histories is 'better'? Let us first state some facts, and then
+make some contentious arguments!
 
 - Fact 1: Each of the commits along the top take us closer to the goal than the
   previous commit, this means that each commit represented the best current
   effort at some point in time.
 
-- Fact 2: No-one wants to live in a half-painted or over-painted house. Think
-  of these work-in-progress (WIP) commits as untestable and breaking the build.
+- Fact 2: No-one wants to live in a half-painted or over-painted house. Please
+  think of these work-in-progress (WIP) commits as untestable and breaking the
+  build.
 
 - Fact 3: If you wanted to cherry-pick or revert the whole painting effort in
   the top path, you would have to do so with all of the commits. On the bottom
@@ -51,7 +52,12 @@ and then make some contentious arguments!
   your work will be more robust to mice running across your keyboard and the
   cats that dash after them.
 
-- Fact 6: 
+- Fact 6: Non-fast-forward pushes to refs that others share with you will
+  complicate the work of those others. Not quite as much as it used to.
+
+- Fact 7: You can convert from the top history to an equivalent of the bottom
+  history with just a bit of extra work. This work becomes easy with
+  experience.
 
 Green-to-green.
 
