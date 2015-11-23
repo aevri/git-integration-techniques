@@ -152,3 +152,14 @@ class GitRepo():
 
 def git_merge_base(repo, *commits):
     return repo('merge-base', *commits)
+
+
+# TODO: write a docstring with doctests when we have a tempdir helper
+@contextmanager
+def chDirContext(newDir):
+    savedPath = os.getcwd()
+    os.chdir(newDir)
+    try:
+        yield
+    finally:
+        os.chdir(savedPath)

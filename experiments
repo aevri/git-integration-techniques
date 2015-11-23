@@ -84,7 +84,7 @@ def doWorkflow(g, workflow, workers):
 
     repo = gitgraph.common.GitRepo(central_repo_name)
 
-    with chDirContext(tempdir_name):
+    with gitgraph.common.chDirContext(tempdir_name):
         createCentralizedRepoAndWorkers(
             central_repo_name,
             [w.name for w in workers])
@@ -102,18 +102,18 @@ def doWorkflow(g, workflow, workers):
 
 def createCentralizedRepoAndWorkers(central_repo_name, worker_names):
     subprocess.check_call(["mkdir", central_repo_name])
-    with chDirContext(central_repo_name):
+    with gitgraph.common.chDirContext(central_repo_name):
         subprocess.check_call(["git", "init", "--bare"])
     for w in worker_names:
         subprocess.check_call(["git", "clone", central_repo_name, w])
     worker = worker_names[0]
-    with chDirContext(worker):
+    with gitgraph.common.chDirContext(worker):
         subprocess.check_call(["touch", "README"])
         subprocess.check_call(["git", "add", "README"])
         subprocess.check_call(["git", "commit", "README", "-m", "initial commit"])
         subprocess.check_call(["git", "push", "origin", "master"])
     for w in worker_names:
-        with chDirContext(w):
+        with gitgraph.common.chDirContext(w):
             subprocess.check_call(["git", "pull", "--no-edit"])
 
 
@@ -162,7 +162,7 @@ def execute(workers, workflow):
     # complete all the jobs from the workers
     while jobsDirs:
         for (j, d) in jobsDirs:
-            with chDirContext(d):
+            with gitgraph.common.chDirContext(d):
                 try:
                     next(j)
                     next_jobsDirs.append((j, d))
@@ -505,17 +505,6 @@ class SvnPullWorkflow():
     def finish_project(self, name, project):
         subprocess.check_call(["git", "pull", "--no-edit"])
         subprocess.check_call(["git", "push", "origin", "master"])
-
-
-# TODO: write a docstring with doctests when we have a tempdir helper
-@contextmanager
-def chDirContext(newDir):
-    savedPath = os.getcwd()
-    os.chdir(newDir)
-    try:
-        yield
-    finally:
-        os.chdir(savedPath)
 
 
 if __name__ == "__main__":
