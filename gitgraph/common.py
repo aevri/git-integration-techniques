@@ -118,7 +118,7 @@ class GitRepo():
         :working_copy_path: string path to the working path repository
 
         """
-        self._working_copy_path = working_copy_path
+        self._working_copy_path = os.path.abspath(working_copy_path)
 
     def yield_stdout(self, *args):
         """Yield the lines of output from invoking git with '*args'.

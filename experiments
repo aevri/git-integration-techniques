@@ -81,7 +81,10 @@ def doWorkflow(g, workflow, workers):
 
     central_repo_name = "origin"
 
-    repo = gitgraph.common.GitRepo(central_repo_name)
+    repo = gitgraph.common.GitRepo(
+        os.path.join(
+            tempdir_name,
+            central_repo_name))
 
     with gitgraph.common.chDirContext(tempdir_name):
         createCentralizedRepoAndWorkers(
