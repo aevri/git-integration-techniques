@@ -576,34 +576,5 @@ def run(*args, **kwargs):
     return RunResult(stdout=str(out), stderr=str(err))
 
 
-# XXX: doesn't handle quotes or backticks
-def runCommands(*commands):
-    """Execute the command-line strings descripted by '*commands'.
-
-    This is a convenience function which wraps the functionality of
-    run() in a manner more compatible for test cases.
-
-    Raise a 'subprocess.CalledProcessError' if the return code is not equal to
-    zero; also echo extra information to stderr.
-
-    Note that behaviour is undefined in the presense of quotes and backticks.
-
-    Usage examples:
-        Echoing 'hello stdout' to stdout:
-        >>> runCommands('echo hello stdout')
-
-        Echoing 'hello stdout' 'goodbye stdout' to stdout:
-        >>> runCommands('echo hello stdout', 'echo goodbye stdout')
-
-    :*commands: a list of strings corresponding to command-lines
-    :returns: None
-
-    """
-    assert not any(bad in c for c in commands for bad in ("'", '"', '`'))
-
-    for c in commands:
-        run(*c.split())
-
-
 if __name__ == "__main__":
     sys.exit(main())
