@@ -182,18 +182,19 @@ def unindent(s):
     return s
 
 
-def commitAppendToFile(filename, text, message):
+def commitAppendToFile(filename, text, message, repo):
     with open(filename, "a") as f:
         f.write(text + "\n")
-    subprocess.check_call(["git", "add", filename])
-    subprocess.check_call(["git", "commit", filename, "-m", message])
+    repo("add", filename)
+    repo("commit", filename, "-m", message)
 
 
-def commitAppendToProjectFile(name, project, item):
+def commitAppendToProjectFile(name, project, item, repo):
     commitAppendToFile(
         project,
         item,
-        project + ": " + item + " (" + name + ")")
+        project + ": " + item + " (" + name + ")",
+        repo)
 
 
 class RebaseMasterWorkflow():
@@ -220,11 +221,11 @@ class RebaseMasterWorkflow():
         pass
 
     def do_item(self, name, project, item, repo):
-        commitAppendToProjectFile(name, project, item)
+        commitAppendToProjectFile(name, project, item, repo)
 
     def finish_project(self, name, project, repo):
-        subprocess.check_call(["git", "pull", "--rebase"])
-        subprocess.check_call(["git", "push", "origin", "master"])
+        repo("pull", "--rebase")
+        repo("push", "origin", "master")
 
 
 class RebaseTopicFfOnlyWorkflow():
@@ -253,22 +254,22 @@ class RebaseTopicFfOnlyWorkflow():
             """
 
     def start_project(self, name, project, repo):
-        subprocess.check_call(["git", "checkout", "-b", project])
+        repo("checkout", "-b", project)
 
     def update(self, name, project):
-        subprocess.check_call(["git", "fetch"])
-        subprocess.check_call(["git", "rebase", "origin/master"])
+        repo("fetch")
+        repo("rebase", "origin/master")
 
     def do_item(self, name, project, item, repo):
-        commitAppendToProjectFile(name, project, item)
+        commitAppendToProjectFile(name, project, item, repo)
 
     def finish_project(self, name, project, repo):
-        subprocess.check_call(["git", "fetch"])
-        subprocess.check_call(["git", "rebase", "origin/master"])
-        subprocess.check_call(["git", "checkout", "-B", "master", "origin/master"])
-        subprocess.check_call(["git", "merge", project, "--ff-only", "--no-edit"])
-        subprocess.check_call(["git", "branch", "-d", project])
-        subprocess.check_call(["git", "push", "origin", "master"])
+        repo("fetch")
+        repo("rebase", "origin/master")
+        repo("checkout", "-B", "master", "origin/master")
+        repo("merge", project, "--ff-only", "--no-edit")
+        repo("branch", "-d", project)
+        repo("push", "origin", "master")
 
 
 class SquashTopicWorkflow():
@@ -295,21 +296,21 @@ class SquashTopicWorkflow():
             """
 
     def start_project(self, name, project, repo):
-        subprocess.check_call(["git", "checkout", "-b", project])
+        repo("checkout", "-b", project)
 
     def update(self, name, project):
         pass
 
     def do_item(self, name, project, item, repo):
-        commitAppendToProjectFile(name, project, item)
+        commitAppendToProjectFile(name, project, item, repo)
 
     def finish_project(self, name, project, repo):
-        subprocess.check_call(["git", "fetch"])
-        subprocess.check_call(["git", "checkout", "-B", "master", "origin/master"])
-        subprocess.check_call(["git", "merge", project, "--squash", "--no-edit"])
-        subprocess.check_call(["git", "commit", "-m", project + " (" + name + ")"])
-        subprocess.check_call(["git", "branch", "-D", project])
-        subprocess.check_call(["git", "push", "origin", "master"])
+        repo("fetch")
+        repo("checkout", "-B", "master", "origin/master")
+        repo("merge", project, "--squash", "--no-edit")
+        repo("commit", "-m", project + " (" + name + ")")
+        repo("branch", "-D", project)
+        repo("push", "origin", "master")
 
 
 class RebaseTopicNoFfWorkflow():
@@ -338,22 +339,22 @@ class RebaseTopicNoFfWorkflow():
             """
 
     def start_project(self, name, project, repo):
-        subprocess.check_call(["git", "checkout", "-b", project])
+        repo("checkout", "-b", project)
 
     def update(self, name, project):
-        subprocess.check_call(["git", "fetch"])
-        subprocess.check_call(["git", "rebase", "origin/master"])
+        repo("fetch")
+        repo("rebase", "origin/master")
 
     def do_item(self, name, project, item, repo):
-        commitAppendToProjectFile(name, project, item)
+        commitAppendToProjectFile(name, project, item, repo)
 
     def finish_project(self, name, project, repo):
-        subprocess.check_call(["git", "fetch"])
-        subprocess.check_call(["git", "rebase", "origin/master"])
-        subprocess.check_call(["git", "checkout", "-B", "master", "origin/master"])
-        subprocess.check_call(["git", "merge", project, "--no-ff", "--no-edit"])
-        subprocess.check_call(["git", "branch", "-d", project])
-        subprocess.check_call(["git", "push", "origin", "master"])
+        repo("fetch")
+        repo("rebase", "origin/master")
+        repo("checkout", "-B", "master", "origin/master")
+        repo("merge", project, "--no-ff", "--no-edit")
+        repo("branch", "-d", project)
+        repo("push", "origin", "master")
 
 
 class MergeTopicWorkflow():
@@ -379,21 +380,21 @@ class MergeTopicWorkflow():
             """
 
     def start_project(self, name, project, repo):
-        subprocess.check_call(["git", "checkout", "-b", project])
+        repo("checkout", "-b", project)
 
     def update(self, name, project):
-        subprocess.check_call(["git", "fetch"])
-        subprocess.check_call(["git", "rebase", "origin/master"])
+        repo("fetch")
+        repo("rebase", "origin/master")
 
     def do_item(self, name, project, item, repo):
-        commitAppendToProjectFile(name, project, item)
+        commitAppendToProjectFile(name, project, item, repo)
 
     def finish_project(self, name, project, repo):
-        subprocess.check_call(["git", "fetch"])
-        subprocess.check_call(["git", "checkout", "-B", "master", "origin/master"])
-        subprocess.check_call(["git", "merge", project, "--no-edit"])
-        subprocess.check_call(["git", "branch", "-d", project])
-        subprocess.check_call(["git", "push", "origin", "master"])
+        repo("fetch")
+        repo("checkout", "-B", "master", "origin/master")
+        repo("merge", project, "--no-edit")
+        repo("branch", "-d", project)
+        repo("push", "origin", "master")
 
 
 class MergeTopicCatchupWorkflow():
@@ -422,23 +423,23 @@ class MergeTopicCatchupWorkflow():
             """
 
     def start_project(self, name, project, repo):
-        subprocess.check_call(["git", "checkout", "-b", project])
+        repo("checkout", "-b", project)
 
     def update(self, name, project):
-        subprocess.check_call(["git", "fetch"])
-        subprocess.check_call(["git", "rebase", "origin/master"])
+        repo("fetch")
+        repo("rebase", "origin/master")
 
     def do_item(self, name, project, item, repo):
-        commitAppendToProjectFile(name, project, item)
-        subprocess.check_call(["git", "fetch"])
-        subprocess.check_call(["git", "merge", "origin/master", "--no-edit"])
+        commitAppendToProjectFile(name, project, item, repo)
+        repo("fetch")
+        repo("merge", "origin/master", "--no-edit")
 
     def finish_project(self, name, project, repo):
-        subprocess.check_call(["git", "fetch"])
-        subprocess.check_call(["git", "checkout", "-B", "master", "origin/master"])
-        subprocess.check_call(["git", "merge", project, "--no-edit"])
-        subprocess.check_call(["git", "branch", "-d", project])
-        subprocess.check_call(["git", "push", "origin", "master"])
+        repo("fetch")
+        repo("checkout", "-B", "master", "origin/master")
+        repo("merge", project, "--no-edit")
+        repo("branch", "-d", project)
+        repo("push", "origin", "master")
 
 
 class SvnWorkflow():
@@ -466,13 +467,13 @@ class SvnWorkflow():
         pass
 
     def do_item(self, name, project, item, repo):
-        commitAppendToProjectFile(name, project, item)
-        subprocess.check_call(["git", "pull", "--rebase"])
-        subprocess.check_call(["git", "push", "origin", "master"])
+        commitAppendToProjectFile(name, project, item, repo)
+        repo("pull", "--rebase")
+        repo("push", "origin", "master")
 
     def finish_project(self, name, project, repo):
-        subprocess.check_call(["git", "pull", "--rebase"])
-        subprocess.check_call(["git", "push", "origin", "master"])
+        repo("pull", "--rebase")
+        repo("push", "origin", "master")
 
 
 class SvnPullWorkflow():
@@ -500,13 +501,13 @@ class SvnPullWorkflow():
         pass
 
     def do_item(self, name, project, item, repo):
-        commitAppendToProjectFile(name, project, item)
-        subprocess.check_call(["git", "pull", "--no-edit"])
-        subprocess.check_call(["git", "push", "origin", "master"])
+        commitAppendToProjectFile(name, project, item, repo)
+        repo("pull", "--no-edit")
+        repo("push", "origin", "master")
 
     def finish_project(self, name, project, repo):
-        subprocess.check_call(["git", "pull", "--no-edit"])
-        subprocess.check_call(["git", "push", "origin", "master"])
+        repo("pull", "--no-edit")
+        repo("push", "origin", "master")
 
 
 if __name__ == "__main__":
