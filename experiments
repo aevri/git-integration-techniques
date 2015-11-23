@@ -31,11 +31,11 @@ class Worker():
 
     def work(self, repo, workflow):
         yield  # XXX: we must yield immediately due to a quirk of simulate()
-        workflow.start_project(self.name, self.project)
+        workflow.start_project(self.name, self.project, repo)
         for item in self.items:
-            workflow.do_item(self.name, self.project, item)
+            workflow.do_item(self.name, self.project, item, repo)
             yield
-        workflow.finish_project(self.name, self.project)
+        workflow.finish_project(self.name, self.project, repo)
 
 
 def main():
@@ -210,16 +210,16 @@ class RebaseMasterWorkflow():
             $ git push origin master
             """
 
-    def start_project(self, name, project):
+    def start_project(self, name, project, repo):
         pass
 
     def update(self, name, project):
         pass
 
-    def do_item(self, name, project, item):
+    def do_item(self, name, project, item, repo):
         commitAppendToProjectFile(name, project, item)
 
-    def finish_project(self, name, project):
+    def finish_project(self, name, project, repo):
         subprocess.check_call(["git", "pull", "--rebase"])
         subprocess.check_call(["git", "push", "origin", "master"])
 
@@ -249,17 +249,17 @@ class RebaseTopicFfOnlyWorkflow():
             $ git push origin master
             """
 
-    def start_project(self, name, project):
+    def start_project(self, name, project, repo):
         subprocess.check_call(["git", "checkout", "-b", project])
 
     def update(self, name, project):
         subprocess.check_call(["git", "fetch"])
         subprocess.check_call(["git", "rebase", "origin/master"])
 
-    def do_item(self, name, project, item):
+    def do_item(self, name, project, item, repo):
         commitAppendToProjectFile(name, project, item)
 
-    def finish_project(self, name, project):
+    def finish_project(self, name, project, repo):
         subprocess.check_call(["git", "fetch"])
         subprocess.check_call(["git", "rebase", "origin/master"])
         subprocess.check_call(["git", "checkout", "-B", "master", "origin/master"])
@@ -291,16 +291,16 @@ class SquashTopicWorkflow():
             $ git push origin master
             """
 
-    def start_project(self, name, project):
+    def start_project(self, name, project, repo):
         subprocess.check_call(["git", "checkout", "-b", project])
 
     def update(self, name, project):
         pass
 
-    def do_item(self, name, project, item):
+    def do_item(self, name, project, item, repo):
         commitAppendToProjectFile(name, project, item)
 
-    def finish_project(self, name, project):
+    def finish_project(self, name, project, repo):
         subprocess.check_call(["git", "fetch"])
         subprocess.check_call(["git", "checkout", "-B", "master", "origin/master"])
         subprocess.check_call(["git", "merge", project, "--squash", "--no-edit"])
@@ -334,17 +334,17 @@ class RebaseTopicNoFfWorkflow():
             $ git push origin master
             """
 
-    def start_project(self, name, project):
+    def start_project(self, name, project, repo):
         subprocess.check_call(["git", "checkout", "-b", project])
 
     def update(self, name, project):
         subprocess.check_call(["git", "fetch"])
         subprocess.check_call(["git", "rebase", "origin/master"])
 
-    def do_item(self, name, project, item):
+    def do_item(self, name, project, item, repo):
         commitAppendToProjectFile(name, project, item)
 
-    def finish_project(self, name, project):
+    def finish_project(self, name, project, repo):
         subprocess.check_call(["git", "fetch"])
         subprocess.check_call(["git", "rebase", "origin/master"])
         subprocess.check_call(["git", "checkout", "-B", "master", "origin/master"])
@@ -375,17 +375,17 @@ class MergeTopicWorkflow():
             $ git push origin master
             """
 
-    def start_project(self, name, project):
+    def start_project(self, name, project, repo):
         subprocess.check_call(["git", "checkout", "-b", project])
 
     def update(self, name, project):
         subprocess.check_call(["git", "fetch"])
         subprocess.check_call(["git", "rebase", "origin/master"])
 
-    def do_item(self, name, project, item):
+    def do_item(self, name, project, item, repo):
         commitAppendToProjectFile(name, project, item)
 
-    def finish_project(self, name, project):
+    def finish_project(self, name, project, repo):
         subprocess.check_call(["git", "fetch"])
         subprocess.check_call(["git", "checkout", "-B", "master", "origin/master"])
         subprocess.check_call(["git", "merge", project, "--no-edit"])
@@ -418,19 +418,19 @@ class MergeTopicCatchupWorkflow():
             $ git push origin master
             """
 
-    def start_project(self, name, project):
+    def start_project(self, name, project, repo):
         subprocess.check_call(["git", "checkout", "-b", project])
 
     def update(self, name, project):
         subprocess.check_call(["git", "fetch"])
         subprocess.check_call(["git", "rebase", "origin/master"])
 
-    def do_item(self, name, project, item):
+    def do_item(self, name, project, item, repo):
         commitAppendToProjectFile(name, project, item)
         subprocess.check_call(["git", "fetch"])
         subprocess.check_call(["git", "merge", "origin/master", "--no-edit"])
 
-    def finish_project(self, name, project):
+    def finish_project(self, name, project, repo):
         subprocess.check_call(["git", "fetch"])
         subprocess.check_call(["git", "checkout", "-B", "master", "origin/master"])
         subprocess.check_call(["git", "merge", project, "--no-edit"])
@@ -456,18 +456,18 @@ class SvnWorkflow():
             $ git push origin master
             """
 
-    def start_project(self, name, project):
+    def start_project(self, name, project, repo):
         pass
 
     def update(self, name, project):
         pass
 
-    def do_item(self, name, project, item):
+    def do_item(self, name, project, item, repo):
         commitAppendToProjectFile(name, project, item)
         subprocess.check_call(["git", "pull", "--rebase"])
         subprocess.check_call(["git", "push", "origin", "master"])
 
-    def finish_project(self, name, project):
+    def finish_project(self, name, project, repo):
         subprocess.check_call(["git", "pull", "--rebase"])
         subprocess.check_call(["git", "push", "origin", "master"])
 
@@ -490,18 +490,18 @@ class SvnPullWorkflow():
             $ git push origin master
             """
 
-    def start_project(self, name, project):
+    def start_project(self, name, project, repo):
         pass
 
     def update(self, name, project):
         pass
 
-    def do_item(self, name, project, item):
+    def do_item(self, name, project, item, repo):
         commitAppendToProjectFile(name, project, item)
         subprocess.check_call(["git", "pull", "--no-edit"])
         subprocess.check_call(["git", "push", "origin", "master"])
 
-    def finish_project(self, name, project):
+    def finish_project(self, name, project, repo):
         subprocess.check_call(["git", "pull", "--no-edit"])
         subprocess.check_call(["git", "push", "origin", "master"])
 
