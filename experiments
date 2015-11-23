@@ -4,7 +4,6 @@
 """Interact with other programs using command-line semantics."""
 
 from contextlib import contextmanager
-import collections
 import os
 import subprocess
 import sys
@@ -17,11 +16,6 @@ import gitgraph.common
 
 # important to read - the graphml won't render nicely by default:
 # http://thirld.com/blog/2012/01/31/making-yed-import-labels-from-graphml-files/
-
-RunResult = collections.namedtuple(
-    'phlsys_subprocess__RunResult',
-    ['stdout', 'stderr'])
-"""Helpers for interacting with the filesystem."""
 
 
 class Worker():
@@ -83,8 +77,8 @@ def main():
 
 def doWorkflow(g, workflow, workers):
     tempdir_name = "_workflow_tempdir"
-    run("rm", "-rf", tempdir_name)
-    run("mkdir", tempdir_name)
+    subprocess.check_call(["rm", "-rf", tempdir_name])
+    subprocess.check_call(["mkdir", tempdir_name])
 
     central_repo_name = "origin"
 
@@ -99,7 +93,7 @@ def doWorkflow(g, workflow, workers):
         text_graph = repo("log", "--graph", "--oneline")
         connections = repo("log", "--format=%f %h %p")
 
-    run("rm", "-rf", tempdir_name)
+    subprocess.check_call(["rm", "-rf", tempdir_name])
 
     print(text_graph)
     namespace = ''.join(workflow.title().split())
@@ -107,20 +101,20 @@ def doWorkflow(g, workflow, workers):
 
 
 def createCentralizedRepoAndWorkers(central_repo_name, worker_names):
-    run("mkdir", central_repo_name)
+    subprocess.check_call(["mkdir", central_repo_name])
     with chDirContext(central_repo_name):
-        run("git", "init", "--bare")
+        subprocess.check_call(["git", "init", "--bare"])
     for w in worker_names:
-        run("git", "clone", central_repo_name, w)
+        subprocess.check_call(["git", "clone", central_repo_name, w])
     worker = worker_names[0]
     with chDirContext(worker):
-        run("touch", "README")
-        run("git", "add", "README")
-        run("git", "commit", "README", "-m", "initial commit")
-        run("git", "push", "origin", "master")
+        subprocess.check_call(["touch", "README"])
+        subprocess.check_call(["git", "add", "README"])
+        subprocess.check_call(["git", "commit", "README", "-m", "initial commit"])
+        subprocess.check_call(["git", "push", "origin", "master"])
     for w in worker_names:
         with chDirContext(w):
-            run("git", "pull")
+            subprocess.check_call(["git", "pull"])
 
 
 def addToGraph(g, namespace, connections_text):
@@ -189,8 +183,8 @@ def unindent(s):
 def commitAppendToFile(filename, text, message):
     with open(filename, "a") as f:
         f.write(text + "\n")
-    run("git", "add", filename)
-    run("git", "commit", filename, "-m", message)
+    subprocess.check_call(["git", "add", filename])
+    subprocess.check_call(["git", "commit", filename, "-m", message])
 
 
 def commitAppendToProjectFile(name, project, item):
@@ -227,8 +221,8 @@ class RebaseMasterWorkflow():
         commitAppendToProjectFile(name, project, item)
 
     def finish_project(self, name, project):
-        run("git", "pull", "--rebase")
-        run("git", "push", "origin", "master")
+        subprocess.check_call(["git", "pull", "--rebase"])
+        subprocess.check_call(["git", "push", "origin", "master"])
 
 
 class RebaseTopicFfOnlyWorkflow():
@@ -257,22 +251,22 @@ class RebaseTopicFfOnlyWorkflow():
             """
 
     def start_project(self, name, project):
-        run("git", "checkout", "-b", project)
+        subprocess.check_call(["git", "checkout", "-b", project])
 
     def update(self, name, project):
-        run("git", "fetch")
-        run("git", "rebase", "origin/master")
+        subprocess.check_call(["git", "fetch"])
+        subprocess.check_call(["git", "rebase", "origin/master"])
 
     def do_item(self, name, project, item):
         commitAppendToProjectFile(name, project, item)
 
     def finish_project(self, name, project):
-        run("git", "fetch")
-        run("git", "rebase", "origin/master")
-        run("git", "checkout", "-B", "master", "origin/master")
-        run("git", "merge", project, "--ff-only")
-        run("git", "branch", "-d", project)
-        run("git", "push", "origin", "master")
+        subprocess.check_call(["git", "fetch"])
+        subprocess.check_call(["git", "rebase", "origin/master"])
+        subprocess.check_call(["git", "checkout", "-B", "master", "origin/master"])
+        subprocess.check_call(["git", "merge", project, "--ff-only"])
+        subprocess.check_call(["git", "branch", "-d", project])
+        subprocess.check_call(["git", "push", "origin", "master"])
 
 
 class SquashTopicWorkflow():
@@ -299,7 +293,7 @@ class SquashTopicWorkflow():
             """
 
     def start_project(self, name, project):
-        run("git", "checkout", "-b", project)
+        subprocess.check_call(["git", "checkout", "-b", project])
 
     def update(self, name, project):
         pass
@@ -308,12 +302,12 @@ class SquashTopicWorkflow():
         commitAppendToProjectFile(name, project, item)
 
     def finish_project(self, name, project):
-        run("git", "fetch")
-        run("git", "checkout", "-B", "master", "origin/master")
-        run("git", "merge", project, "--squash")
-        run("git", "commit", "-m", project + " (" + name + ")")
-        run("git", "branch", "-D", project)
-        run("git", "push", "origin", "master")
+        subprocess.check_call(["git", "fetch"])
+        subprocess.check_call(["git", "checkout", "-B", "master", "origin/master"])
+        subprocess.check_call(["git", "merge", project, "--squash"])
+        subprocess.check_call(["git", "commit", "-m", project + " (" + name + ")"])
+        subprocess.check_call(["git", "branch", "-D", project])
+        subprocess.check_call(["git", "push", "origin", "master"])
 
 
 class RebaseTopicNoFfWorkflow():
@@ -342,22 +336,22 @@ class RebaseTopicNoFfWorkflow():
             """
 
     def start_project(self, name, project):
-        run("git", "checkout", "-b", project)
+        subprocess.check_call(["git", "checkout", "-b", project])
 
     def update(self, name, project):
-        run("git", "fetch")
-        run("git", "rebase", "origin/master")
+        subprocess.check_call(["git", "fetch"])
+        subprocess.check_call(["git", "rebase", "origin/master"])
 
     def do_item(self, name, project, item):
         commitAppendToProjectFile(name, project, item)
 
     def finish_project(self, name, project):
-        run("git", "fetch")
-        run("git", "rebase", "origin/master")
-        run("git", "checkout", "-B", "master", "origin/master")
-        run("git", "merge", project, "--no-ff")
-        run("git", "branch", "-d", project)
-        run("git", "push", "origin", "master")
+        subprocess.check_call(["git", "fetch"])
+        subprocess.check_call(["git", "rebase", "origin/master"])
+        subprocess.check_call(["git", "checkout", "-B", "master", "origin/master"])
+        subprocess.check_call(["git", "merge", project, "--no-ff"])
+        subprocess.check_call(["git", "branch", "-d", project])
+        subprocess.check_call(["git", "push", "origin", "master"])
 
 
 class MergeTopicWorkflow():
@@ -383,21 +377,21 @@ class MergeTopicWorkflow():
             """
 
     def start_project(self, name, project):
-        run("git", "checkout", "-b", project)
+        subprocess.check_call(["git", "checkout", "-b", project])
 
     def update(self, name, project):
-        run("git", "fetch")
-        run("git", "rebase", "origin/master")
+        subprocess.check_call(["git", "fetch"])
+        subprocess.check_call(["git", "rebase", "origin/master"])
 
     def do_item(self, name, project, item):
         commitAppendToProjectFile(name, project, item)
 
     def finish_project(self, name, project):
-        run("git", "fetch")
-        run("git", "checkout", "-B", "master", "origin/master")
-        run("git", "merge", project)
-        run("git", "branch", "-d", project)
-        run("git", "push", "origin", "master")
+        subprocess.check_call(["git", "fetch"])
+        subprocess.check_call(["git", "checkout", "-B", "master", "origin/master"])
+        subprocess.check_call(["git", "merge", project])
+        subprocess.check_call(["git", "branch", "-d", project])
+        subprocess.check_call(["git", "push", "origin", "master"])
 
 
 class MergeTopicCatchupWorkflow():
@@ -426,23 +420,23 @@ class MergeTopicCatchupWorkflow():
             """
 
     def start_project(self, name, project):
-        run("git", "checkout", "-b", project)
+        subprocess.check_call(["git", "checkout", "-b", project])
 
     def update(self, name, project):
-        run("git", "fetch")
-        run("git", "rebase", "origin/master")
+        subprocess.check_call(["git", "fetch"])
+        subprocess.check_call(["git", "rebase", "origin/master"])
 
     def do_item(self, name, project, item):
         commitAppendToProjectFile(name, project, item)
-        run("git", "fetch")
-        run("git", "merge", "origin/master")
+        subprocess.check_call(["git", "fetch"])
+        subprocess.check_call(["git", "merge", "origin/master"])
 
     def finish_project(self, name, project):
-        run("git", "fetch")
-        run("git", "checkout", "-B", "master", "origin/master")
-        run("git", "merge", project)
-        run("git", "branch", "-d", project)
-        run("git", "push", "origin", "master")
+        subprocess.check_call(["git", "fetch"])
+        subprocess.check_call(["git", "checkout", "-B", "master", "origin/master"])
+        subprocess.check_call(["git", "merge", project])
+        subprocess.check_call(["git", "branch", "-d", project])
+        subprocess.check_call(["git", "push", "origin", "master"])
 
 
 class SvnWorkflow():
@@ -471,12 +465,12 @@ class SvnWorkflow():
 
     def do_item(self, name, project, item):
         commitAppendToProjectFile(name, project, item)
-        run("git", "pull", "--rebase")
-        run("git", "push", "origin", "master")
+        subprocess.check_call(["git", "pull", "--rebase"])
+        subprocess.check_call(["git", "push", "origin", "master"])
 
     def finish_project(self, name, project):
-        run("git", "pull", "--rebase")
-        run("git", "push", "origin", "master")
+        subprocess.check_call(["git", "pull", "--rebase"])
+        subprocess.check_call(["git", "push", "origin", "master"])
 
 
 class SvnPullWorkflow():
@@ -505,12 +499,12 @@ class SvnPullWorkflow():
 
     def do_item(self, name, project, item):
         commitAppendToProjectFile(name, project, item)
-        run("git", "pull")
-        run("git", "push", "origin", "master")
+        subprocess.check_call(["git", "pull"])
+        subprocess.check_call(["git", "push", "origin", "master"])
 
     def finish_project(self, name, project):
-        run("git", "pull")
-        run("git", "push", "origin", "master")
+        subprocess.check_call(["git", "pull"])
+        subprocess.check_call(["git", "push", "origin", "master"])
 
 
 # TODO: write a docstring with doctests when we have a tempdir helper
@@ -522,58 +516,6 @@ def chDirContext(newDir):
         yield
     finally:
         os.chdir(savedPath)
-
-
-# def run(*args, workingDir=None): <-- supported in Python 3, use kwargs for
-# now
-def run(*args, **kwargs):
-    """Execute the command described by args, return a 'RunResult'.
-
-    This is a convenience function which wraps the functionality of
-    subprocess.Popen() in a manner more compatible for our uses here.
-
-    Raise a 'subprocess.CalledProcessError' if the return code is not equal to
-    zero; also echo extra information to stderr.
-
-    Usage examples:
-        Echoing 'hello stdout' to stdout:
-        >>> run('echo', 'hello stdout')
-        phlsys_subprocess__RunResult(stdout='hello stdout\\n', stderr='')
-
-        Passing a list on stdin and sorting in reverse order:
-        >>> run('sort', '-r', stdin='1\\n2\\n3')
-        phlsys_subprocess__RunResult(stdout='3\\n2\\n1\\n', stderr='')
-
-    :*args: a tuple of strings corresponding to command-line arguments
-    :**kwargs: keyword arguments corresponding to the special
-    :returns: a RunResult corresponding to the output of the command
-
-    """
-    # TODO: allow customization of non-zero return value behaviour,
-    #       maybe not all clients will want to raise an exception in this case.
-    #       if we do allow this customization then we'll also want to
-    #       return the return value via the RunResult
-    workingDir = kwargs.pop("workingDir", None)
-    stdin = kwargs.pop("stdin", None)
-    assert not kwargs
-    cmd = args
-    p = subprocess.Popen(
-        cmd,
-        cwd=workingDir,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE)
-    out, err = p.communicate(input=stdin)
-    if (p.returncode != 0):
-        sys.stderr.write("cmd: " + str(cmd))
-        if workingDir:
-            sys.stderr.write("workingDir: " + workingDir)
-        if stdin:
-            sys.stderr.write("stdin: " + stdin)
-        sys.stderr.write("out:" + out)
-        sys.stderr.write("err:" + err)
-        raise subprocess.CalledProcessError(p.returncode, cmd, out)
-    return RunResult(stdout=str(out), stderr=str(err))
 
 
 if __name__ == "__main__":
