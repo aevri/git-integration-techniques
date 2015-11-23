@@ -106,24 +106,6 @@ def doWorkflow(g, workflow, workers):
     addToGraph(g, namespace, connections)
 
 
-def call_git(cwd, *args):
-    return ''.join(list(yield_stdout(('git', ) + args, cwd)))
-
-
-def yield_stdout(args, cwd):
-
-    process = subprocess.Popen(
-        args,
-        stdout=subprocess.PIPE,
-        bufsize=1,
-        universal_newlines=True,
-        cwd=cwd)
-
-    with process:
-        for line in process.stdout:
-            yield line
-
-
 def createCentralizedRepoAndWorkers(central_repo_name, worker_names):
     run("mkdir", central_repo_name)
     with chDirContext(central_repo_name):
