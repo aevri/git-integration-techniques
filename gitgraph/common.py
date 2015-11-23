@@ -1,5 +1,7 @@
 """A dumping ground for all source prior to re-organisation."""
 
+import contextlib
+import os
 import subprocess
 
 # networkx must be installed before use
@@ -155,7 +157,7 @@ def git_merge_base(repo, *commits):
 
 
 # TODO: write a docstring with doctests when we have a tempdir helper
-@contextmanager
+@contextlib.contextmanager
 def chDirContext(newDir):
     savedPath = os.getcwd()
     os.chdir(newDir)
