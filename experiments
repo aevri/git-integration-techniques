@@ -3,7 +3,6 @@
 
 """Interact with other programs using command-line semantics."""
 
-from contextlib import contextmanager
 import os
 import subprocess
 import sys
@@ -30,7 +29,7 @@ class Worker():
         self.project = project
         self.items = items
 
-    def work(self, workflow):
+    def work(self, repo, workflow):
         yield  # XXX: we must yield immediately due to a quirk of simulate()
         workflow.start_project(self.name, self.project)
         for item in self.items:
@@ -155,8 +154,8 @@ def addToGraph(g, namespace, connections_text):
 
 
 def execute(workers, workflow):
-
-    jobsDirs = [(w.work(workflow), w.name) for w in workers]
+    Repo = gitgraph.common.GitRepo
+    jobsDirs = [(w.work(Repo(w.name), workflow), w.name) for w in workers]
     next_jobsDirs = []
 
     # complete all the jobs from the workers
